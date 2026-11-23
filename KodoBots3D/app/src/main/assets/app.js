@@ -16,6 +16,7 @@
     J: 'm5 11 7-7 7 7M5 19l7-7 7 7',
     U: 'M13 2 5 13h6l-1 9 9-13h-6Z',
     F1: 'M7 19V7a3 3 0 0 1 3-3h3M5 11h6m4 8v-9l-2 2',
+    F2: 'M6 19V7a3 3 0 0 1 3-3h3M4 11h6m3 1a2.5 2.5 0 0 1 5 0c0 2-5 4-5 7h5',
     loop: 'M4 9h12a4 4 0 0 1 0 8H6m2 4-4-4 4-4m8-8 4 4-4 4',
     if: 'm12 3 9 9-9 9-9-9 9-9Zm0 5v4m0 4h.01',
   };
@@ -30,19 +31,120 @@
     return String(str).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
   }
 
+  // ==================== 2D STARFIELD + CONFETTI VFX ====================
+  const starCanvas = $('starfieldCanvas');
+  const starCtx = starCanvas.getContext('2d');
+  const stars2d = Array.from({ length: 95 }, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    r: 0.6 + Math.random() * 1.7,
+    phase: Math.random() * Math.PI * 2,
+    speed: 0.001 + Math.random() * 0.0025,
+  }));
+  let comet = null;
+
+  function renderStarfield(time) {
+    if ($('landing').classList.contains('hidden')) return;
+    const w = starCanvas.clientWidth;
+    const h = starCanvas.clientHeight;
+    if (!w || !h) return;
+    if (starCanvas.width !== w || starCanvas.height !== h) {
+      starCanvas.width = w;
+      starCanvas.height = h;
+    }
+    starCtx.clearRect(0, 0, w, h);
+    for (const s of stars2d) {
+      const a = 0.25 + 0.7 * ((Math.sin(time * s.speed + s.phase) + 1) / 2);
+      starCtx.fillStyle = `rgba(226, 232, 240, ${a.toFixed(2)})`;
+      starCtx.beginPath();
+      starCtx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
+      starCtx.fill();
+    }
+    // Occasional shooting star!
+    if (!comet && Math.random() < 0.008) {
+      comet = { x: Math.random() * w * 0.8 + w * 0.1, y: Math.random() * h * 0.35, vx: 7 + Math.random() * 4, vy: 3 + Math.random() * 2, life: 1 };
+    }
+    if (comet) {
+      starCtx.strokeStyle = `rgba(186, 230, 253, ${comet.life.toFixed(2)})`;
+      starCtx.lineWidth = 2;
+      starCtx.beginPath();
+      starCtx.moveTo(comet.x, comet.y);
+      starCtx.lineTo(comet.x - comet.vx * 8, comet.y - comet.vy * 8);
+      starCtx.stroke();
+      comet.x += comet.vx;
+      comet.y += comet.vy;
+      comet.life -= 0.025;
+      if (comet.life <= 0) comet = null;
+    }
+  }
+
+  const confCanvas = $('confettiCanvas');
+  const confCtx = confCanvas.getContext('2d');
+  let confetti = [];
+
+  function launchConfetti(count) {
+    if (!save.settings.motion) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    confCanvas.width = w;
+    confCanvas.height = h;
+    const colors = ['#f97316', '#38bdf8', '#34d399', '#fbbf24', '#ec4899', '#a78bfa'];
+    for (let i = 0; i < (count || 85); i++) {
+      confetti.push({
+        x: w * 0.5 + (Math.random() - 0.5) * w * 0.45,
+        y: h * 0.32 + (Math.random() - 0.5) * 60,
+        vx: (Math.random() - 0.5) * 11,
+        vy: -5 - Math.random() * 8,
+        size: 5 + Math.random() * 6,
+        rot: Math.random() * 6.28,
+        vr: (Math.random() - 0.5) * 0.25,
+        col: colors[i % colors.length],
+        life: 1,
+      });
+    }
+  }
+
+  function renderConfetti() {
+    if (!confetti.length) return;
+    const w = confCanvas.width;
+    const h = confCanvas.height;
+    confCtx.clearRect(0, 0, w, h);
+    for (let i = confetti.length - 1; i >= 0; i--) {
+      const c = confetti[i];
+      c.x += c.vx;
+      c.y += c.vy;
+      c.vy += 0.28;
+      c.rot += c.vr;
+      c.life -= 0.011;
+      if (c.life <= 0 || c.y > h + 30) {
+        confetti.splice(i, 1);
+        continue;
+      }
+      confCtx.save();
+      confCtx.globalAlpha = Math.min(1, c.life * 1.6);
+      confCtx.translate(c.x, c.y);
+      confCtx.rotate(c.rot);
+      confCtx.fillStyle = c.col;
+      confCtx.fillRect(-c.size / 2, -c.size / 4, c.size, c.size / 2);
+      confCtx.restore();
+    }
+    if (!confetti.length) confCtx.clearRect(0, 0, w, h);
+  }
+
   // ==================== PERSISTENT SAVE STATE ====================
-  const SAVE_KEY = 'kodobots-3d-v1';
+  const SAVE_KEY = 'kodobots-3d-v2';
   let save = {
     stars: Array(L.LEVELS.length).fill(0),
     badges: {},
     quizBest: 0,
     lastLevel: 0,
+    heroSkin: 'pixel',
     custom: null,
     settings: {
       music: true,
       sfx: true,
       haptics: true,
-      volume: 0.32,
+      volume: 0.34,
       speed: 1,
       motion: true,
       unlockAll: false,
@@ -51,13 +153,14 @@
 
   function loadSave() {
     try {
-      const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+      const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || localStorage.getItem('kodobots-3d-v1') || '{}');
       if (Array.isArray(raw.stars)) {
         save.stars = Array.from({ length: L.LEVELS.length }, (_, i) => Math.min(3, Math.max(0, Number(raw.stars[i]) || 0)));
       }
       if (raw.badges && typeof raw.badges === 'object') save.badges = raw.badges;
       if (typeof raw.quizBest === 'number') save.quizBest = raw.quizBest;
       if (typeof raw.lastLevel === 'number') save.lastLevel = Math.min(L.LEVELS.length - 1, Math.max(0, raw.lastLevel));
+      if (raw.heroSkin && L.CHARACTERS.some((c) => c.id === raw.heroSkin)) save.heroSkin = raw.heroSkin;
       if (raw.custom) save.custom = raw.custom;
       if (raw.settings) save.settings = { ...save.settings, ...raw.settings };
     } catch (e) {}
@@ -65,9 +168,7 @@
   }
 
   function persist() {
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(save));
-    } catch (e) {}
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
   }
 
   function highestUnlocked() {
@@ -77,7 +178,7 @@
     return i;
   }
 
-  // ==================== GAME RUNTIME STATE ====================
+  // ==================== RUNTIME STATE ====================
   let levelIndex = 0;
   let level = null;
   let world = null;
@@ -86,18 +187,15 @@
   let brush = '.';
   let mapVariant = 0;
 
-  // Dual-robot state (single robot uses index 0)
+  // Support up to 3 robots!
   let activeRobot = 0;
-  let programs = [[], []];
-  let fn1s = [[], []];
+  let programs = [[], [], []];
+  let fn1s = [[], [], []];
+  let fn2s = [[], [], []];
   let robots = [{ x: 0, z: 0, d: 0 }];
-  let progress = [
-    { pointer: 0, flat: [], done: false, failed: false, actions: 0 },
-    { pointer: 0, flat: [], done: false, failed: false, actions: 0 },
-  ];
+  let progress = [0, 1, 2].map(() => ({ pointer: 0, flat: [], done: false, failed: false, actions: 0 }));
 
-  // Editor state
-  let editorScope = 'main'; // 'main' | 'fn1' | 'code'
+  let editorScope = 'main'; // 'main' | 'fn1' | 'fn2' | 'code'
   let running = false;
   let stepping = false;
   let completed = false;
@@ -122,24 +220,36 @@
   let hero3D = null;
   let webglFailed = false;
 
+  function robotCnt() {
+    return (builder || !level) ? 1 : E.robotCount(level);
+  }
+
   function isTeam() {
-    return !!(level && level.start2 && !builder);
+    return robotCnt() > 1;
+  }
+
+  function activeHeroName() {
+    if (isTeam()) return E.ROBOT_NAMES[activeRobot];
+    const ch = L.CHARACTERS.find((c) => c.id === save.heroSkin);
+    return ch ? ch.name : 'Пиксель';
   }
 
   function currentList() {
-    return editorScope === 'fn1' ? fn1s[activeRobot] : programs[activeRobot];
+    if (editorScope === 'fn1') return fn1s[activeRobot];
+    if (editorScope === 'fn2') return fn2s[activeRobot];
+    return programs[activeRobot];
   }
 
   function allowedCommands() {
-    if (builder) return ['F', 'L', 'R', 'P', 'C', 'J', 'U', 'F1', 'loop', 'if'];
+    if (builder) return ['F', 'L', 'R', 'P', 'C', 'J', 'U', 'F1', 'F2', 'loop', 'if'];
     return level.allowed || ['F'];
   }
 
   function totalBlocksUsed() {
-    const count = isTeam() ? 2 : 1;
+    const cnt = robotCnt();
     let sum = 0;
-    for (let i = 0; i < count; i++) {
-      sum += E.countBlocks(programs[i]) + E.countBlocks(fn1s[i]);
+    for (let i = 0; i < cnt; i++) {
+      sum += E.countBlocks(programs[i]) + E.countBlocks(fn1s[i]) + E.countBlocks(fn2s[i]);
     }
     return sum;
   }
@@ -149,31 +259,31 @@
     el.textContent = msg;
     el.classList.remove('hidden');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
+    toastTimer = setTimeout(() => el.classList.add('hidden'), 3300);
   }
 
   function unlockBadge(id) {
     if (save.badges[id]) return;
     save.badges[id] = true;
     persist();
+    Audio.fx('badge');
     const b = L.BADGES.find((x) => x.id === id);
-    if (b) toast(`🏆 Новое достижение: ${b.icon} ${b.name}!`);
+    if (b) toast(`🏆 Достижение: ${b.icon} ${b.name}!`);
     updateLandingUI();
   }
 
   function checkProgressBadges() {
     const s = save.stars;
+    const totalStars = s.reduce((a, b) => a + b, 0);
     if (s.some((n) => n > 0)) unlockBadge('first');
-    const doneRange = (a, b) => s.slice(a, b + 1).every((n) => n > 0);
-    if (doneRange(0, 4)) unlockBadge('ch1');
-    if (doneRange(5, 9)) unlockBadge('loops');
-    if (doneRange(10, 13)) unlockBadge('debug');
-    if (doneRange(14, 18)) unlockBadge('fn');
-    if (doneRange(19, 23)) unlockBadge('team');
-    if (doneRange(24, 29)) unlockBadge('sensors');
+    L.CHAPTERS.forEach((ch, idx) => {
+      if (s.slice(ch.from, ch.to + 1).every((n) => n > 0)) unlockBadge(`ch${idx + 1}`);
+    });
+    if (totalStars >= 50) unlockBadge('stars50');
+    if (totalStars >= 120) unlockBadge('stars120');
   }
 
-  // ==================== LEVEL & WORLD LIFECYCLE ====================
+  // ==================== LEVEL LIFECYCLE ====================
   function stopExec() {
     running = false;
     stepping = false;
@@ -194,27 +304,37 @@
     mapVariant = 0;
     activeRobot = 0;
     editorScope = 'main';
-    programs = [level.starter ? E.clone(level.starter) : [], []];
-    fn1s = [level.starterFn1 ? E.clone(level.starterFn1) : [], []];
+    programs = [level.starter ? E.clone(level.starter) : [], [], []];
+    fn1s = [level.starterFn1 ? E.clone(level.starterFn1) : [], [], []];
+    fn2s = [[], [], []];
     hintStage = 0;
     coachDismissed = false;
+
+    const biome = L.BIOMES[level.biome] || L.BIOMES[0];
+    Audio.setMood(biome.musicMood);
 
     $('workshopBar').classList.add('hidden');
     resetWorld();
     renderAll();
     if (level.starter || level.starterFn1) {
-      setStatus('pause', '🐞 В заготовке спрятан баг! Запусти программу (или по шагам ▷) и исправь ошибку.');
+      setStatus('pause', '🐞 В заготовке спрятан баг! Запусти программу по шагам (▷) и исправь ошибку.');
     }
   }
 
   function resetWorld() {
     world = builder ? E.clone(level.grid) : E.gridForVariant(level, mapVariant);
     robots = [E.clone(level.start)];
-    if (isTeam()) robots.push(E.clone(level.start2));
-    progress = [
-      { pointer: 0, flat: E.expand(programs[0], fn1s[0]), done: false, failed: false, actions: 0 },
-      { pointer: 0, flat: E.expand(programs[1], fn1s[1]), done: false, failed: false, actions: 0 },
-    ];
+    if (!builder && level.start2) robots.push(E.clone(level.start2));
+    if (!builder && level.start3) robots.push(E.clone(level.start3));
+
+    progress = [0, 1, 2].map((i) => ({
+      pointer: 0,
+      flat: E.expand(programs[i], fn1s[i], fn2s[i]),
+      done: false,
+      failed: false,
+      actions: 0,
+    }));
+
     totalCrystals = world.flat().filter((t) => t === 'C').length;
     totalModules = world.flat().filter((t) => t === 'S').length;
     collectedCrystals = 0;
@@ -232,7 +352,7 @@
   }
 
   function applyStageTheme() {
-    const biome = builder ? L.BIOMES[0] : (L.BIOMES[level.biome] || L.BIOMES[0]);
+    const biome = L.BIOMES[level.biome] || L.BIOMES[0];
     const ph = game3D ? S3D.LIGHT_PHASES[game3D.phaseIndex] : S3D.LIGHT_PHASES[0];
     const panel = $('stagePanel');
     const isDark = ph.night > 0.5;
@@ -240,7 +360,7 @@
     if (isDark) {
       panel.style.background = `radial-gradient(circle at 25% 12%, ${biome.nightSky[1]}, ${biome.nightSky[0]} 75%)`;
     } else if (ph.night > 0.3) {
-      panel.style.background = `radial-gradient(circle at 25% 10%, #fed7aa, #a78bfa 58%, #312e81)`;
+      panel.style.background = 'radial-gradient(circle at 25% 10%, #fed7aa, #a78bfa 58%, #312e81)';
     } else {
       panel.style.background = `radial-gradient(circle at 22% 10%, ${biome.sky[0]}, ${biome.sky[1]} 55%, ${biome.sky[2]})`;
     }
@@ -248,16 +368,16 @@
 
   function renderAll() {
     const ch = L.chapterFor(levelIndex);
-    const biome = builder ? L.BIOMES[0] : (L.BIOMES[level.biome] || L.BIOMES[0]);
+    const biome = L.BIOMES[level.biome] || L.BIOMES[0];
 
     $('chapterLabel').textContent = builder ? 'МАСТЕРСКАЯ 3D' : ch.title;
     $('levelTag').textContent = builder
       ? (testing ? 'Тест станции' : 'Редактор карты')
       : `Станция ${String(levelIndex + 1).padStart(2, '0')} / ${L.LEVELS.length}`;
-    $('biomeTag').textContent = biome.short;
+    $('biomeTag').textContent = `${biome.icon} ${biome.short}`;
     $('levelName').textContent = level.name;
     $('levelDesc').textContent = builder
-      ? (testing ? 'Проверь свою станцию программой!' : 'Выбери кисть внизу и нажимай на клетки 3D станции.')
+      ? (testing ? 'Проверь свою станцию программой!' : 'Выбирай кисть и нажимай на клетки 3D-станции.')
       : level.desc;
 
     applyStageTheme();
@@ -274,18 +394,19 @@
 
   function renderSpecialBars() {
     const rTabs = $('robotTabs');
-    rTabs.classList.toggle('hidden', !isTeam());
-    if (isTeam()) {
+    const cnt = robotCnt();
+    rTabs.classList.toggle('hidden', cnt <= 1);
+    if (cnt > 1) {
       rTabs.replaceChildren();
-      E.ROBOT_NAMES.forEach((name, idx) => {
+      for (let idx = 0; idx < cnt; idx++) {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = `robot-tab r${idx}` + (activeRobot === idx ? ' active' : '');
         b.disabled = running || !!anim;
-        b.textContent = `${idx + 1} · ${name}${progress[idx].done ? ' ✓' : ''}`;
+        b.textContent = `${idx + 1} · ${E.ROBOT_NAMES[idx]}${progress[idx].done ? ' ✓' : ''}`;
         b.onclick = () => switchRobot(idx);
         rTabs.append(b);
-      });
+      }
     }
 
     const vBtn = $('variantBtn');
@@ -297,15 +418,21 @@
   }
 
   function renderScopeTabs() {
-    const hasFn = allowedCommands().includes('F1');
-    $('tabFn1').classList.toggle('hidden', !hasFn);
-    if (!hasFn && editorScope === 'fn1') editorScope = 'main';
+    const allow = allowedCommands();
+    const hasF1 = allow.includes('F1');
+    const hasF2 = allow.includes('F2');
+    $('tabFn1').classList.toggle('hidden', !hasF1);
+    $('tabFn2').classList.toggle('hidden', !hasF2);
+    if (!hasF1 && editorScope === 'fn1') editorScope = 'main';
+    if (!hasF2 && editorScope === 'fn2') editorScope = 'main';
 
     document.querySelectorAll('#scopeTabs .scope-tab').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.scope === editorScope);
     });
-    const fnCount = E.countBlocks(fn1s[activeRobot]);
-    $('tabFn1').textContent = fnCount ? `ƒ F1 (${fnCount})` : 'ƒ F1';
+    const c1 = E.countBlocks(fn1s[activeRobot]);
+    const c2 = E.countBlocks(fn2s[activeRobot]);
+    $('tabFn1').textContent = c1 ? `ƒ F1 (${c1})` : 'ƒ F1';
+    $('tabFn2').textContent = c2 ? `ƒ F2 (${c2})` : 'ƒ F2';
 
     $('workspace').classList.toggle('hidden', editorScope === 'code');
     $('codeView').classList.toggle('hidden', editorScope !== 'code');
@@ -313,28 +440,31 @@
 
   function renderReqStrip() {
     const strip = $('reqStrip');
-    if (builder) {
-      strip.classList.add('hidden');
-      return;
-    }
+    if (builder) { strip.classList.add('hidden'); return; }
     const items = [];
-    const activeProgs = isTeam() ? [programs[0], programs[1]] : [programs[0]];
-    const activeFns = isTeam() ? [fn1s[0], fn1s[1]] : [fn1s[0]];
+    const cnt = robotCnt();
+    const activeProgs = programs.slice(0, cnt);
+    const activeF1 = fn1s.slice(0, cnt);
+    const activeF2 = fn2s.slice(0, cnt);
 
     if (level.requireLoop) {
-      const met = activeProgs.every((p, i) => E.hasBlockType(p, 'loop') || E.hasBlockType(activeFns[i], 'loop'));
-      items.push({ text: '⟳ Нужен Повтор', met });
+      const met = activeProgs.every((p, i) => E.hasBlockType(p, 'loop') || E.hasBlockType(activeF1[i], 'loop') || E.hasBlockType(activeF2[i], 'loop'));
+      items.push({ text: '⟳ Повтор', met });
     }
     if (level.requireFn) {
-      const met = activeProgs.some((p, i) => E.hasBlockType(p, 'F1') && activeFns[i].length > 0);
-      items.push({ text: 'ƒ Нужна Функция F1', met });
+      const met = activeProgs.some((p, i) => (E.hasBlockType(p, 'F1') || E.hasBlockType(activeF2[i], 'F1')) && activeF1[i].length > 0);
+      items.push({ text: 'ƒ Функция F1', met });
+    }
+    if (level.requireFn2) {
+      const met = activeProgs.some((p, i) => (E.hasBlockType(p, 'F2') || E.hasBlockType(activeF1[i], 'F2')) && activeF2[i].length > 0);
+      items.push({ text: 'ƒ Функция F2', met });
     }
     if (level.requireIf) {
-      const met = activeProgs.every((p, i) => E.hasBlockType(p, 'if') || E.hasBlockType(activeFns[i], 'if'));
-      items.push({ text: '◇ Нужно «Если…»', met });
+      const met = activeProgs.every((p, i) => E.hasBlockType(p, 'if') || E.hasBlockType(activeF1[i], 'if') || E.hasBlockType(activeF2[i], 'if'));
+      items.push({ text: '◇ «Если…»', met });
     }
     if (level.adaptiveCells) {
-      items.push({ text: '🔀 2 варианта карты', met: false });
+      items.push({ text: '🔀 2 карты', met: false });
     }
 
     strip.classList.toggle('hidden', !items.length);
@@ -351,19 +481,15 @@
     const el = $('objectives');
     el.replaceChildren();
     const pills = [];
-    if (totalCrystals > 0) {
-      pills.push({ icon: '◆', label: 'Кристаллы', cur: collectedCrystals, max: totalCrystals });
-    }
-    if (totalModules > 0) {
-      pills.push({ icon: '☀', label: 'Модули', cur: fixedModules, max: totalModules });
-    }
-    if (isTeam()) {
-      const doneCnt = (progress[0].done ? 1 : 0) + (progress[1].done ? 1 : 0);
-      pills.push({ icon: '◎', label: 'Порталы', cur: doneCnt, max: 2 });
+    if (totalCrystals > 0) pills.push({ icon: '◆', label: 'Кристаллы', cur: collectedCrystals, max: totalCrystals });
+    if (totalModules > 0) pills.push({ icon: '☀', label: 'Модули', cur: fixedModules, max: totalModules });
+    const cnt = robotCnt();
+    if (cnt > 1) {
+      const doneCnt = progress.slice(0, cnt).filter((p) => p.done).length;
+      pills.push({ icon: '◎', label: 'Порталы', cur: doneCnt, max: cnt });
     } else {
       pills.push({ icon: '◎', label: 'Портал', cur: completed ? 1 : 0, max: 1 });
     }
-
     pills.forEach((p) => {
       const d = document.createElement('div');
       d.className = 'obj-pill' + (p.cur >= p.max ? ' done' : '');
@@ -410,7 +536,7 @@
     });
     const colored = safe
       .replace(/\b(def|for|in|range|if|else|pass)\b/g, '<span class="py-kw">$1</span>')
-      .replace(/(вперёд|налево|направо|починить|собрать|прыжок|сигнал|датчик|f1)(?=\()/g, '<span class="py-fn">$1</span>');
+      .replace(/(вперёд|налево|направо|починить|собрать|прыжок|сигнал|датчик|f1|f2)(?=\()/g, '<span class="py-fn">$1</span>');
     return colored.replace(/\x00(\d+)\x00/g, (_, i) => tokens[Number(i)]);
   }
 
@@ -426,7 +552,7 @@
 
     if (editorScope === 'code') {
       const cv = $('codeView');
-      const lines = E.toPseudocode(programs[activeRobot], fn1s[activeRobot], E.ROBOT_NAMES[activeRobot]);
+      const lines = E.toPseudocode(programs[activeRobot], fn1s[activeRobot], fn2s[activeRobot], activeHeroName());
       cv.replaceChildren();
       lines.forEach((ln) => {
         const div = document.createElement('div');
@@ -445,9 +571,9 @@
     if (!list.length) {
       const empty = document.createElement('div');
       empty.className = 'empty-ws';
-      empty.innerHTML = editorScope === 'fn1'
-        ? '<b>Функция F1 пока пуста</b><span>Добавь команды снизу — потом вызывай их одним блоком «F1()»!</span>'
-        : `<b>${isTeam() ? 'Алгоритм: ' + E.ROBOT_NAMES[activeRobot] : 'Собери свой алгоритм'}</b><span>Нажимай на команды внизу. Нажми на любой блок, чтобы изменить его.</span>`;
+      empty.innerHTML = editorScope === 'fn1' || editorScope === 'fn2'
+        ? `<b>Функция ${editorScope.toUpperCase()} пока пуста</b><span>Собери здесь повторяющуюся связку команд и вызывай её одним блоком!</span>`
+        : `<b>Алгоритм: ${esc(activeHeroName())}</b><span>Выбирай команды внизу. Нажми на блок в списке, чтобы его изменить.</span>`;
       ws.append(empty);
       return;
     }
@@ -496,7 +622,6 @@
       up.type = 'button';
       up.className = 'row-btn';
       up.textContent = '↑';
-      up.title = 'Выше';
       up.disabled = running || idx === 0;
       up.onclick = (ev) => {
         ev.stopPropagation();
@@ -509,7 +634,6 @@
       del.type = 'button';
       del.className = 'row-btn del';
       del.textContent = '×';
-      del.title = 'Удалить';
       del.disabled = running;
       del.onclick = (ev) => {
         ev.stopPropagation();
@@ -529,13 +653,14 @@
     }
   }
 
+  function isFnSelfCall(code) {
+    return (editorScope === 'fn1' && code === 'F1') || (editorScope === 'fn2' && code === 'F2');
+  }
+
   function renderPalette() {
     const pal = $('palette');
     pal.replaceChildren();
-    const list = allowedCommands();
-    list.forEach((code) => {
-      // Prevent F1 inside F1 (avoid recursion confusion for kids)
-      const disabledInFn = editorScope === 'fn1' && code === 'F1';
+    allowedCommands().forEach((code) => {
       const meta = E.CMD[code];
       const b = document.createElement('button');
       b.type = 'button';
@@ -543,7 +668,7 @@
       b.dataset.code = code;
       b.style.setProperty('--btn-col', meta.color);
       b.title = `${meta.detail} (${meta.key})`;
-      b.disabled = running || disabledInFn;
+      b.disabled = running || isFnSelfCall(code);
       b.innerHTML = `<span class="cmd-ico">${cmdSvg(code, 20)}</span><span>${meta.short}</span>`;
       b.onclick = () => {
         if (editorScope === 'code') {
@@ -557,7 +682,6 @@
       pal.append(b);
     });
 
-    // Subtle pulse on level 1 first command
     if (!builder && levelIndex === 0 && !programs[0].length) {
       pal.querySelector('[data-code="F"]')?.classList.add('pulse');
     }
@@ -569,10 +693,10 @@
     const icons = { ready: '🚀', running: '⚡', pause: '⏸', error: '⚠️', success: '🎉' };
     let text = msg;
     if (!text) {
-      if (builder && !testing) text = 'Построй станцию кистями на 3D поле, затем нажми «Запустить» для проверки!';
-      else if (programs[activeRobot].length) text = 'Алгоритм собран! Нажми «▶ Запустить» или проверь по одному шагу «▷».';
+      if (builder && !testing) text = 'Рисуй 3D-станцию кистями, меняй биом, затем жми «▶ Запустить»!';
+      else if (programs[activeRobot].length) text = 'Проверь алгоритм запуском «▶» или по одному шагу «▷»!';
       else if (levelIndex === 0) text = 'Нажми «Вперёд» два раза, затем «▶ Запустить»!';
-      else text = 'Выбирай команды внизу, чтобы составить программу.';
+      else text = 'Добавляй блоки команд внизу, чтобы составить программу.';
     }
     el.innerHTML = `<span>${icons[kind] || '🚀'}</span><span>${esc(text)}</span>`;
   }
@@ -596,8 +720,7 @@
     $('clearBtn').disabled = running || !list.length || editorScope === 'code';
 
     document.querySelectorAll('#palette button').forEach((b) => {
-      const code = b.dataset.code;
-      b.disabled = running || (editorScope === 'fn1' && code === 'F1');
+      b.disabled = running || isFnSelfCall(b.dataset.code);
     });
     document.querySelectorAll('#robotTabs button').forEach((b) => {
       b.disabled = running || !!anim;
@@ -607,8 +730,9 @@
   // ==================== EDITING COMMANDS ====================
   function prepareEdit() {
     if (running) return false;
-    const p = progress[activeRobot];
-    if (p.pointer > 0 || completed || failed || stepping || (isTeam() && (progress[0].done || progress[1].done))) {
+    const cnt = robotCnt();
+    const anyMoved = progress.slice(0, cnt).some((p) => p.pointer > 0 || p.done || p.failed);
+    if (anyMoved || completed || failed || stepping) {
       stopExec();
       resetWorld();
     }
@@ -617,10 +741,7 @@
 
   function addBlock(node) {
     if (running) return;
-    if (totalBlocksUsed() >= 64) {
-      toast('Максимум 64 блока в алгоритме.');
-      return;
-    }
+    if (totalBlocksUsed() >= 64) { toast('Максимум 64 блока в алгоритме.'); return; }
     prepareEdit();
     currentList().push(node);
     Audio.fx('click');
@@ -628,7 +749,7 @@
   }
 
   function afterEdit() {
-    progress[activeRobot].flat = E.expand(programs[activeRobot], fn1s[activeRobot]);
+    progress[activeRobot].flat = E.expand(programs[activeRobot], fn1s[activeRobot], fn2s[activeRobot]);
     renderWorkspace();
     renderPalette();
     setStatus('ready');
@@ -645,6 +766,7 @@
     errorScope = null;
     errorRow = -1;
     stepping = progress[idx].pointer > 0 && !progress[idx].done && !progress[idx].failed;
+    Audio.fx('chirp');
     renderSpecialBars();
     renderWorkspace();
     renderPalette();
@@ -652,12 +774,12 @@
     setStatus(
       progress[idx].done ? 'success' : 'ready',
       progress[idx].done
-        ? `${E.ROBOT_NAMES[idx]} уже в своём портале! Переключись на напарника.`
-        : `Программируем: ${E.ROBOT_NAMES[idx]}.`
+        ? `${E.ROBOT_NAMES[idx]} уже в портале! Выбери другого робота.`
+        : `Сейчас программируешь: ${E.ROBOT_NAMES[idx]}.`
     );
   }
 
-  // ==================== EXECUTION & STEP DEBUGGER ====================
+  // ==================== EXECUTION ENGINE ====================
   async function executeOneStep(token) {
     if (token !== runToken) return false;
     const p = progress[activeRobot];
@@ -665,17 +787,12 @@
     const others = robots.filter((_, i) => i !== activeRobot);
     const state = { world, robot: bot, others };
 
-    const condRes = E.resolveHeadConditions(p.flat, p.pointer, fn1s[activeRobot], state);
-    if (condRes.error) {
-      failExecution(condRes.error, null, -1);
-      return false;
-    }
-    if (condRes.lastBranch) {
-      Audio.fx('scan');
-    }
+    const condRes = E.resolveHeadConditions(p.flat, p.pointer, fn1s[activeRobot], fn2s[activeRobot], state);
+    if (condRes.error) { failExecution(condRes.error, null, -1); return false; }
+    if (condRes.lastBranch) Audio.fx('scan');
 
     if (p.pointer >= p.flat.length) {
-      failExecution('Ветка условия не выполнила действий. Проверь ветки «Если / Иначе»!', editorScope, -1);
+      failExecution('Ветка условия не выполнила действий. Проверь «Если / Иначе»!', editorScope, -1);
       return false;
     }
 
@@ -685,13 +802,11 @@
     activeScope = item.scope;
     activeRow = item.row;
     activeTrace = item.iterLabel || '';
-    if (editorScope !== 'code' && item.scope !== editorScope) {
-      editorScope = item.scope;
-    }
+    if (editorScope !== 'code' && item.scope !== editorScope) editorScope = item.scope;
     renderWorkspace();
 
     const cmdName = E.CMD[item.code] ? E.CMD[item.code].name : item.code;
-    setStatus('running', `${E.ROBOT_NAMES[activeRobot]} · шаг ${p.pointer + 1}: ${cmdName}${item.iterLabel ? ' (' + item.iterLabel + ')' : ''}`);
+    setStatus('running', `${activeHeroName()} · шаг ${p.pointer + 1}: ${cmdName}${item.iterLabel ? ' (' + item.iterLabel + ')' : ''}`);
 
     const res = E.transition(item.code, state);
     if (!res.ok) {
@@ -703,40 +818,64 @@
       return false;
     }
 
-    // Visual & Audio effects
     p.actions++;
+    const dur = (save.settings.motion ? 460 : 110) / save.settings.speed;
+
     if (res.type === 'collect') {
       collectedCrystals++;
       Audio.fx('collect');
-      if (game3D && save.settings.motion) game3D.burst(res.x, res.z, 0xf472b6, 22);
+      if (game3D && save.settings.motion) {
+        game3D.beam(before.x, before.z, res.x, res.z, 0xf472b6);
+        game3D.burst(res.x, res.z, 0xf472b6, 24);
+      }
     } else if (res.type === 'fix') {
       fixedModules++;
       Audio.fx('fix');
-      if (game3D && save.settings.motion) game3D.burst(res.x, res.z, 0x34d399, 22);
+      if (game3D && save.settings.motion) {
+        game3D.beam(before.x, before.z, res.x, res.z, 0x34d399);
+        game3D.burst(res.x, res.z, 0x34d399, 24);
+      }
     } else if (res.type === 'activate') {
       Audio.fx('activate');
       if (game3D && save.settings.motion) {
-        game3D.burst(res.x, res.z, 0xfacc15, 24);
-        (res.opened || []).forEach(([gx, gz]) => game3D.burst(gx, gz, 0x38bdf8, 20));
+        game3D.burst(res.x, res.z, 0xfacc15, 26);
+        (res.opened || []).forEach(([gx, gz]) => {
+          game3D.beam(res.x, res.z, gx, gz, 0xfacc15);
+          game3D.burst(gx, gz, 0x38bdf8, 22);
+        });
       }
+    } else if (res.type === 'teleport') {
+      // Animate stepping onto entry teleport, then warp flash to destination!
+      Audio.fx(res.jump ? 'jump' : 'step');
+      const half = dur * 0.65;
+      anim = { from: before, to: { x: res.entryX, z: res.entryZ, d: bot.d }, start: performance.now(), duration: half, jump: !!res.jump };
+      await new Promise((r) => setTimeout(r, half));
+      if (token !== runToken) return false;
+      anim = null;
+      Audio.fx('teleport');
+      if (game3D && save.settings.motion) {
+        game3D.warpFlash(res.entryX, res.entryZ);
+        game3D.warpFlash(res.x, res.z);
+        game3D.beam(res.entryX, res.entryZ, res.x, res.z, 0xe879f9);
+      }
+      await new Promise((r) => setTimeout(r, dur * 0.45));
+      if (token !== runToken) return false;
     } else {
       Audio.fx(res.type === 'turn' ? 'turn' : res.type === 'jump' ? 'jump' : 'step');
     }
 
-    const dur = (save.settings.motion ? 470 : 120) / save.settings.speed;
-    anim = { from: before, to: E.clone(bot), start: performance.now(), duration: dur, jump: res.type === 'jump' };
-    await new Promise((r) => setTimeout(r, dur));
-    if (token !== runToken) return false;
-    anim = null;
+    if (res.type !== 'teleport') {
+      anim = { from: before, to: E.clone(bot), start: performance.now(), duration: dur, jump: res.type === 'jump' };
+      await new Promise((r) => setTimeout(r, dur));
+      if (token !== runToken) return false;
+      anim = null;
+    }
+
     p.pointer++;
     renderObjectives();
 
-    // Check end of current robot's program
-    const nextCond = E.resolveHeadConditions(p.flat, p.pointer, fn1s[activeRobot], state);
-    if (nextCond.error) {
-      failExecution(nextCond.error, null, -1);
-      return false;
-    }
+    const nextCond = E.resolveHeadConditions(p.flat, p.pointer, fn1s[activeRobot], fn2s[activeRobot], state);
+    if (nextCond.error) { failExecution(nextCond.error, null, -1); return false; }
 
     if (p.pointer >= p.flat.length) {
       running = false;
@@ -745,29 +884,35 @@
       activeRow = -1;
       activeTrace = '';
 
-      const goalTile = activeRobot === 0 ? 'B' : 'E';
+      const goalTile = E.GOAL_TILES[activeRobot];
       const atGoal = world[bot.z]?.[bot.x] === goalTile;
+      const cnt = robotCnt();
 
-      if (isTeam()) {
+      if (cnt > 1) {
         p.done = atGoal;
         renderSpecialBars();
         renderObjectives();
         renderWorkspace();
 
-        if (progress[0].done && progress[1].done && collectedCrystals === totalCrystals && fixedModules === totalModules) {
+        const allDone = progress.slice(0, cnt).every((pr) => pr.done);
+        if (allDone && collectedCrystals === totalCrystals && fixedModules === totalModules) {
           handleVictory();
           return false;
         }
         if (atGoal) {
-          if (game3D) game3D.setMood(activeRobot, 'happy');
+          if (game3D) {
+            game3D.setMood(activeRobot, 'happy');
+            game3D.burst(bot.x, bot.z, 0xfbbf24, 24);
+          }
           Audio.fx('collect');
-          setStatus('success', `${E.ROBOT_NAMES[activeRobot]} в портале! Теперь переключись на ${E.ROBOT_NAMES[1 - activeRobot]} и запусти его.`);
+          const nextBotIdx = progress.slice(0, cnt).findIndex((pr) => !pr.done);
+          setStatus('success', `${E.ROBOT_NAMES[activeRobot]} в портале! Переключись на ${E.ROBOT_NAMES[nextBotIdx]} и запусти его.`);
         } else {
           if (game3D) game3D.setMood(activeRobot, 'sad');
           p.failed = true;
           failed = true;
           Audio.fx('error');
-          setStatus('error', `${E.ROBOT_NAMES[activeRobot]} остановился, не дойдя до своего портала. Исправь маршрут!`);
+          setStatus('error', `${E.ROBOT_NAMES[activeRobot]} не дошёл до своего портала! Исправь алгоритм.`);
         }
         syncControls();
         return false;
@@ -779,14 +924,13 @@
         const leftC = totalCrystals - collectedCrystals;
         const leftM = totalModules - fixedModules;
         const msg = leftC || leftM
-          ? `Алгоритм завершён, но остались задачи: кристаллов — ${leftC}, модулей — ${leftM}. Дополни код!`
-          : 'Команды закончились, а золотой портал ещё впереди! Добавь шаги и запусти снова.';
+          ? `Команды закончились, но остались задачи: кристаллов — ${leftC}, модулей — ${leftM}.`
+          : 'Команды закончились, а портал ещё впереди! Добавь шаги и попробуй снова.';
         if (game3D) game3D.setMood(0, 'sad');
         failExecution(msg, null, -1);
         return false;
       }
     }
-
     return true;
   }
 
@@ -811,17 +955,17 @@
     if (running) {
       running = false;
       stepping = true;
-      setStatus('pause', 'Пауза. Нажми «Продолжить» или «▷» для пошаговой отладки.');
+      setStatus('pause', 'Пауза. Продолжи запуск или нажми «▷» для пошаговой отладки.');
       syncControls();
       return;
     }
     if (anim || completed) return;
     if (!programs[activeRobot].length) {
-      toast(`Добавь хотя бы одну команду для ${E.ROBOT_NAMES[activeRobot]}.`);
+      toast(`Добавь хотя бы одну команду для ${activeHeroName()}.`);
       return;
     }
     if (isTeam() && progress[activeRobot].done) {
-      toast(`${E.ROBOT_NAMES[activeRobot]} уже у портала! Переключись на напарника.`);
+      toast(`${E.ROBOT_NAMES[activeRobot]} уже у портала! Выбери другого робота.`);
       return;
     }
 
@@ -829,14 +973,14 @@
       testing = true;
       $('workshopBar').classList.add('hidden');
       $('levelTag').textContent = 'Тест станции';
-      $('levelDesc').textContent = 'Проверяем твою станцию программой!';
+      $('levelDesc').textContent = 'Проверяем твою 3D-станцию!';
       resetWorld();
     } else if (failed || progress[activeRobot].pointer >= progress[activeRobot].flat.length) {
       if (!isTeam() || failed) resetWorld();
     }
 
     if (!stepping) {
-      progress[activeRobot].flat = E.expand(programs[activeRobot], fn1s[activeRobot]);
+      progress[activeRobot].flat = E.expand(programs[activeRobot], fn1s[activeRobot], fn2s[activeRobot]);
       progress[activeRobot].pointer = 0;
     }
 
@@ -850,8 +994,7 @@
 
     const token = runToken;
     while (running && token === runToken) {
-      const more = await executeOneStep(token);
-      if (!more) break;
+      if (!(await executeOneStep(token))) break;
     }
     syncControls();
   }
@@ -859,10 +1002,7 @@
   async function stepProgram() {
     Audio.init();
     if (running || anim || completed) return;
-    if (!programs[activeRobot].length) {
-      toast('Сначала добавь команды в алгоритм.');
-      return;
-    }
+    if (!programs[activeRobot].length) { toast('Сначала добавь команды.'); return; }
     if (isTeam() && progress[activeRobot].done) return;
 
     if (builder && !testing) {
@@ -875,7 +1015,7 @@
     }
 
     if (!stepping) {
-      progress[activeRobot].flat = E.expand(programs[activeRobot], fn1s[activeRobot]);
+      progress[activeRobot].flat = E.expand(programs[activeRobot], fn1s[activeRobot], fn2s[activeRobot]);
       progress[activeRobot].pointer = 0;
     }
     stepping = true;
@@ -886,7 +1026,7 @@
     const token = runToken;
     const more = await executeOneStep(token);
     if (more && token === runToken) {
-      setStatus('pause', `Шаг выполнен (${progress[activeRobot].pointer} / ${progress[activeRobot].flat.length}). Нажми ▷ для следующего!`);
+      setStatus('pause', `Шаг выполнен (${progress[activeRobot].pointer} / ${progress[activeRobot].flat.length}). Жми ▷ дальше!`);
     }
     syncControls();
   }
@@ -897,18 +1037,18 @@
       testing = false;
       $('workshopBar').classList.remove('hidden');
       $('levelTag').textContent = 'Редактор карты';
-      $('levelDesc').textContent = 'Выбери кисть внизу и нажимай на клетки 3D станции.';
+      $('levelDesc').textContent = 'Выбирай кисть и нажимай на клетки 3D-станции.';
     }
     resetWorld();
     renderSpecialBars();
     renderWorkspace();
-    setStatus('ready', 'Роботы вернулись на старт — твой код сохранён!');
+    setStatus('ready', 'Герои снова на старте — твой алгоритм сохранён!');
     Audio.fx('click');
   }
 
   function handleVictory() {
     if (!builder) {
-      const err = E.validateCurriculum(programs, fn1s, level);
+      const err = E.validateCurriculum(programs, fn1s, fn2s, level);
       if (err) {
         if (game3D) game3D.setMood(activeRobot, 'sad');
         failExecution(err, null, -1);
@@ -926,17 +1066,19 @@
     syncControls();
 
     Audio.fx('win');
+    launchConfetti(95);
     if (game3D) {
       game3D.setMood(-1, 'happy');
-      robots.forEach((r) => {
-        if (save.settings.motion) game3D.burst(r.x, r.z, 0xfbbf24, 34);
-      });
+      if (save.settings.motion) {
+        robots.forEach((r) => game3D.fireworks(r.x, r.z));
+      }
     }
-    setStatus('success', '🎉 Портал активирован! Станция сияет энергией!');
+    setStatus('success', '🎉 Портал сияет! Станция полностью активирована!');
 
     const usedBlocks = totalBlocksUsed();
     const modelBlocks = E.countBlocks(level.model)
       + E.countBlocks(level.model2)
+      + E.countBlocks(level.model3)
       + E.countBlocks(level.modelFn1)
       + E.countBlocks(level.modelFn2);
     const stars = builder
@@ -956,12 +1098,12 @@
       updateLandingUI();
     }
 
-    const totalActs = progress[0].actions + (isTeam() ? progress[1].actions : 0);
+    const totalActs = progress.slice(0, robotCnt()).reduce((s, pr) => s + pr.actions, 0);
     const tok = runToken;
     setTimeout(() => {
       if (tok !== runToken || !completed) return;
       showWinModal(stars, totalActs, usedBlocks);
-    }, 1050);
+    }, 1150);
   }
 
   // ==================== MODALS ====================
@@ -980,17 +1122,17 @@
   function showWinModal(stars, actions, blocks) {
     const isLast = !builder && levelIndex === L.LEVELS.length - 1;
     showModal(`
-      <div class="m-eyebrow" style="text-align:center">${builder ? 'АВТОРСКАЯ СТАНЦИЯ' : isLast ? 'АКАДЕМИЯ ПРОЙДЕНА!' : 'МИССИЯ ВЫПОЛНЕНА'}</div>
+      <div class="m-eyebrow" style="text-align:center">${builder ? 'АВТОРСКАЯ СТАНЦИЯ' : isLast ? 'ВСЕ 50 СТАНЦИЙ ПРОЙДЕНЫ!' : 'МИССИЯ ВЫПОЛНЕНА'}</div>
       <div class="win-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
-      <h2 id="modalTitle" style="text-align:center;margin-right:0">${isLast ? 'Ты — Звёздный Программист!' : 'Станция активирована!'}</h2>
+      <h2 id="modalTitle" style="text-align:center;margin-right:0">${isLast ? 'Легенда Звёздной Академии!' : 'Станция активирована!'}</h2>
       <p style="text-align:center">${
         builder
-          ? 'Твой алгоритм успешно прошёл твою же станцию! Можешь поделиться кодом карты с друзьями.'
+          ? 'Твой код прошёл созданную тобой станцию! Поделись кодом карты с друзьями.'
           : isLast
-            ? 'Все 30 космических станций спасены! Ты освоил циклы, отладку, функции F1, работу в команде и датчики.'
+            ? 'Невероятно! Все 50 космических станций в 8 мирах оживлены! Ты освоил циклы, отладку, функции F1/F2, телепорты, командную работу и датчики!'
             : level.adaptiveCells
-              ? 'Отлично! Алгоритм автоматически проверен на обоих вариантах карты — всё работает!'
-              : 'Пиксель гордится тобой! Готов к следующей миссии?'
+              ? 'Отлично! Твой умный алгоритм прошёл сразу оба варианта карты!'
+              : `${activeHeroName()} в восторге! Вперёд к следующей станции?`
       }</p>
       <div class="stat-grid">
         <div class="stat-box"><b>${blocks}</b><small>блоков в коде</small></div>
@@ -1012,7 +1154,46 @@
     };
   }
 
-  // Block editor modal (replace primitive OR open loop/if editor)
+  // Hangar of 4 Heroes Modal!
+  function openHangarModal() {
+    showModal(`
+      <div class="m-eyebrow">АНГАР РОБОТОВ · 4 ГЕРОЯ</div>
+      <h2 id="modalTitle">Выбери своего героя</h2>
+      <p>Выбранный робот будет вести твои одиночные миссии и встречать тебя в главном меню!</p>
+      <div class="hero-grid" id="heroGrid">
+        ${L.CHARACTERS.map((c) => `
+          <button type="button" class="hero-card ${save.heroSkin === c.id ? 'selected' : ''}" data-hero="${c.id}" style="--hero-col:${c.color}">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="hero-dot">${c.emoji}</div>
+              <div>
+                <b style="font-size:15px;display:block">${esc(c.name)}</b>
+                <small style="color:#475569;font-size:11px">${esc(c.role)}</small>
+              </div>
+            </div>
+            <p style="margin:6px 0 0;font-size:12px">${esc(c.bio)}</p>
+            <div style="margin-top:auto;padding-top:6px;font-size:11.5px;font-weight:800;color:${c.color}">
+              ${save.heroSkin === c.id ? '✓ Выбран сейчас' : 'Выбрать героя →'}
+            </div>
+          </button>
+        `).join('')}
+      </div>
+    `, true);
+
+    document.querySelectorAll('[data-hero]').forEach((btn) => {
+      btn.onclick = () => {
+        save.heroSkin = btn.dataset.hero;
+        persist();
+        Audio.fx('chirp');
+        unlockBadge('hero');
+        updateLandingUI();
+        if (!builder && !isTeam()) renderWorkspace();
+        openHangarModal();
+        const ch = L.CHARACTERS.find((x) => x.id === save.heroSkin);
+        if (ch) toast(`🛸 Выбран герой: ${ch.name}!`);
+      };
+    });
+  }
+
   function openBlockEditor(idx) {
     if (running) return;
     const list = currentList();
@@ -1026,7 +1207,7 @@
     showModal(`
       <div class="m-eyebrow">РЕДАКТИРОВАНИЕ · БЛОК ${idx + 1}</div>
       <h2 id="modalTitle">Заменить команду</h2>
-      <p>Выбери новую команду на место «${esc(E.CMD[node].name)}»:</p>
+      <p>Выбери новую команду вместо «${esc(E.CMD[node].name)}»:</p>
       <div class="ed-palette" id="repGrid"></div>
       <div class="modal-actions">
         <button id="repUp" type="button" ${idx === 0 ? 'disabled' : ''}>↑ Выше</button>
@@ -1036,7 +1217,7 @@
     `);
 
     allowedCommands()
-      .filter((c) => c !== 'loop' && c !== 'if' && !(editorScope === 'fn1' && c === 'F1'))
+      .filter((c) => c !== 'loop' && c !== 'if' && !isFnSelfCall(c))
       .forEach((c) => {
         const b = document.createElement('button');
         b.type = 'button';
@@ -1051,27 +1232,11 @@
         $('repGrid').append(b);
       });
 
-    $('repUp').onclick = () => {
-      prepareEdit();
-      [list[idx - 1], list[idx]] = [list[idx], list[idx - 1]];
-      afterEdit();
-      closeModal();
-    };
-    $('repDown').onclick = () => {
-      prepareEdit();
-      [list[idx + 1], list[idx]] = [list[idx], list[idx + 1]];
-      afterEdit();
-      closeModal();
-    };
-    $('repDel').onclick = () => {
-      prepareEdit();
-      list.splice(idx, 1);
-      afterEdit();
-      closeModal();
-    };
+    $('repUp').onclick = () => { prepareEdit(); [list[idx - 1], list[idx]] = [list[idx], list[idx - 1]]; afterEdit(); closeModal(); };
+    $('repDown').onclick = () => { prepareEdit(); [list[idx + 1], list[idx]] = [list[idx], list[idx + 1]]; afterEdit(); closeModal(); };
+    $('repDel').onclick = () => { prepareEdit(); list.splice(idx, 1); afterEdit(); closeModal(); };
   }
 
-  // Loop modal (create or edit)
   function openLoopModal(editIdx, onDoneOverride) {
     const list = currentList();
     const draft = editIdx !== null && editIdx !== undefined
@@ -1103,7 +1268,6 @@
           const r = document.createElement('div');
           r.className = 'ed-row';
           r.innerHTML = `<span>${i + 1}. ${esc(E.formatBlock(it))}</span>`;
-
           if (typeof it !== 'string' && it.type === 'if') {
             const ed = document.createElement('button');
             ed.type = 'button';
@@ -1112,7 +1276,6 @@
             ed.onclick = () => openIfModal(null, it, (updated) => { draft.body[i] = updated; draw(); });
             r.append(ed);
           }
-
           const up = document.createElement('button');
           up.type = 'button';
           up.className = 'row-btn';
@@ -1132,7 +1295,7 @@
       }
 
       allowedCommands()
-        .filter((c) => c !== 'loop' && !(editorScope === 'fn1' && c === 'F1'))
+        .filter((c) => c !== 'loop' && !isFnSelfCall(c))
         .forEach((c) => {
           const b = document.createElement('button');
           b.type = 'button';
@@ -1140,12 +1303,8 @@
           b.onclick = () => {
             if (draft.body.length >= 10) { toast('До 10 команд внутри цикла.'); return; }
             Audio.fx('click');
-            if (c === 'if') {
-              openIfModal(null, null, (node) => { draft.body.push(node); draw(); });
-            } else {
-              draft.body.push(c);
-              draw();
-            }
+            if (c === 'if') openIfModal(null, null, (node) => { draft.body.push(node); draw(); });
+            else { draft.body.push(c); draw(); }
           };
           $('loopPal').append(b);
         });
@@ -1165,7 +1324,6 @@
     draw();
   }
 
-  // Conditional IF modal
   function openIfModal(editIdx, initialNode, onDoneOverride) {
     const list = currentList();
     const draft = initialNode
@@ -1175,7 +1333,6 @@
         : { type: 'if', test: 'C', yes: ['C'], no: ['P'] });
 
     let side = 'yes';
-
     function draw() {
       showModal(`
         <div class="m-eyebrow">УСЛОВИЕ · ДАТЧИК ВПЕРЕДИ</div>
@@ -1185,6 +1342,7 @@
           <option value="C" ${draft.test === 'C' ? 'selected' : ''}>◆ Впереди энергокристалл</option>
           <option value="S" ${draft.test === 'S' ? 'selected' : ''}>☀ Впереди повреждённый модуль</option>
           <option value="free" ${draft.test === 'free' ? 'selected' : ''}>→ Путь впереди свободен</option>
+          <option value="T" ${draft.test === 'T' ? 'selected' : ''}>🌀 Впереди телепорт</option>
         </select>
         <div class="branch-tabs">
           <button id="bYes" type="button" class="${side === 'yes' ? 'active' : ''}">✓ Если верно (${draft.yes.length})</button>
@@ -1222,17 +1380,12 @@
       }
 
       allowedCommands()
-        .filter((c) => c !== 'loop' && c !== 'if' && !(editorScope === 'fn1' && c === 'F1'))
+        .filter((c) => c !== 'loop' && c !== 'if' && !isFnSelfCall(c))
         .forEach((c) => {
           const b = document.createElement('button');
           b.type = 'button';
           b.textContent = E.CMD[c].short;
-          b.onclick = () => {
-            if (arr.length >= 6) return;
-            Audio.fx('click');
-            arr.push(c);
-            draw();
-          };
+          b.onclick = () => { if (arr.length >= 6) return; Audio.fx('click'); arr.push(c); draw(); };
           $('ifPal').append(b);
         });
 
@@ -1250,7 +1403,6 @@
     draw();
   }
 
-  // Station Map Modal
   function openMapModal() {
     if (running) { running = false; stepping = true; syncControls(); }
     const done = save.stars.filter((n) => n > 0).length;
@@ -1258,13 +1410,14 @@
     const maxUnlock = highestUnlocked();
 
     let html = `
-      <div class="m-eyebrow">ЗВЁЗДНАЯ КАРТА</div>
-      <h2 id="modalTitle">30 космических станций</h2>
+      <div class="m-eyebrow">ЗВЁЗДНАЯ КАРТА ГАЛАКТИКИ</div>
+      <h2 id="modalTitle">8 миров · 50 станций</h2>
       <p>Пройдено: <b>${done} / ${L.LEVELS.length}</b> · Собрано звёзд: <b>${totalStars} / ${L.LEVELS.length * 3} ★</b></p>
     `;
 
     L.CHAPTERS.forEach((ch, ci) => {
-      html += `<div class="chapter-block"><div class="chapter-head"><span>ГЛАВА ${ci + 1} · ${ch.title}</span><span>${ch.skill}</span></div><div class="map-grid">`;
+      const bm = L.BIOMES[ch.biome] || L.BIOMES[0];
+      html += `<div class="chapter-block"><div class="chapter-head"><span>${bm.icon} ГЛАВА ${ci + 1} · ${ch.title}</span><span class="req-badge">${ch.skill}</span></div><div class="map-grid">`;
       for (let i = ch.from; i <= ch.to; i++) {
         const lv = L.LEVELS[i];
         const locked = i > maxUnlock;
@@ -1291,12 +1444,8 @@
     });
   }
 
-  // Progressive 3-Stage Hint Modal
   function openHintModal() {
-    if (builder) {
-      openGuideModal();
-      return;
-    }
+    if (builder) { openGuideModal(); return; }
     if (running) { running = false; stepping = true; syncControls(); }
     hintStage = Math.min(3, hintStage + 1);
 
@@ -1305,26 +1454,29 @@
       text = level.desc;
     } else if (hintStage === 2) {
       const parts = [];
-      if (level.starter || level.starterFn1) parts.push('Нажми кнопку пошаговой отладки «▷» и посмотри, на каком блоке Пиксель ошибается.');
-      if (level.requireFn) parts.push('Переключись на вкладку «ƒ F1», собери там повторяющуюся часть, а в основном коде вызывай блок «F1()».');
-      if (level.requireIf) parts.push('Помести блок «Если…» внутрь повтора (или в F1), чтобы датчик проверял каждую клетку перед шагом.');
-      if (isTeam()) parts.push('Если на станции есть пульт ⚡, сначала запусти Пикселя, чтобы отключить лазерные ворота для Битика!');
-      if (!parts.length) parts.push('Посмотри на стрелку у ног Пикселя и разбей маршрут на маленькие одинаковые участки.');
+      if (level.starter || level.starterFn1) parts.push('Нажми «▷» (один шаг) и посмотри, где робот ошибается.');
+      if (level.requireFn) parts.push('Вынеси повторяющуюся связку на вкладку «ƒ F1» и вызывай блок «F1()».');
+      if (level.requireFn2) parts.push('Используй вторую функцию «ƒ F2» для отдельной связки движений!');
+      if (level.grid.flat().includes('T')) parts.push('После телепорта робот сохраняет своё направление — проверь стрелку!');
+      if (level.requireIf) parts.push('Помести блок «Если…» внутрь повтора, чтобы датчик проверял клетку на каждом шаге.');
+      if (isTeam()) parts.push('Если есть пульт ⚡, сначала запусти Пикселя — он отключит лазерные ворота!');
+      if (!parts.length) parts.push('Разбей путь на короткие одинаковые участки и смотри на стрелку направления.');
       text = parts.join('\n\n');
     } else {
       const lines = [];
-      if (level.modelFn1) lines.push('ƒ F1 (Пиксель): ' + level.modelFn1.map(E.formatBlock).join(' → '));
-      lines.push('Пиксель: ' + level.model.map(E.formatBlock).join(' → '));
-      if (level.modelFn2) lines.push('ƒ F1 (Битик): ' + level.modelFn2.map(E.formatBlock).join(' → '));
-      if (level.model2) lines.push('Битик: ' + level.model2.map(E.formatBlock).join(' → '));
+      if (level.modelFn1) lines.push('ƒ F1: ' + level.modelFn1.map(E.formatBlock).join(' → '));
+      if (level.modelFn2) lines.push('ƒ F2: ' + level.modelFn2.map(E.formatBlock).join(' → '));
+      lines.push((isTeam() ? '1 · Пиксель: ' : 'Алгоритм: ') + level.model.map(E.formatBlock).join(' → '));
+      if (level.model2) lines.push('2 · Битик: ' + level.model2.map(E.formatBlock).join(' → '));
+      if (level.model3) lines.push('3 · Вольт: ' + level.model3.map(E.formatBlock).join(' → '));
       text = lines.join('\n\n');
     }
 
     showModal(`
       <div class="m-eyebrow">ПОДСКАЗКА · ШАГ ${hintStage} / 3</div>
       <h2 id="modalTitle">${hintStage === 3 ? 'Пример верного алгоритма' : 'Давай разберёмся вместе'}</h2>
-      <p style="white-space:pre-wrap;color:#0f172a;font-size:14px;background:#f8fafc;padding:12px;border-radius:12px;border:1px solid #e2e8f0">${esc(text)}</p>
-      <p>Подсказки не отнимают звёзды — они помогают учиться программировать!</p>
+      <p style="white-space:pre-wrap;color:#0f172a;font-size:13.5px;background:#f8fafc;padding:12px;border-radius:12px;border:1px solid #e2e8f0">${esc(text)}</p>
+      <p>Подсказки бесплатны и не отнимают звёзды!</p>
       <div class="modal-actions">
         <button id="hClose" type="button">Попробую сам</button>
         ${hintStage < 3 ? '<button id="hMore" class="btn-primary" type="button">Ещё подсказка →</button>' : ''}
@@ -1334,7 +1486,6 @@
     if ($('hMore')) $('hMore').onclick = openHintModal;
   }
 
-  // Guide + Interactive Quiz Modal
   function openGuideModal(startTab) {
     let tab = startTab || 'guide';
     let qIdx = 0;
@@ -1346,7 +1497,7 @@
       if (tab === 'guide') {
         body = '<div class="guide-grid">' + L.GUIDE_CARDS.map((c) => `
           <div class="guide-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px">
               <b>${c.icon} ${esc(c.title)}</b>
               <span class="req-badge">${esc(c.tag)}</span>
             </div>
@@ -1358,7 +1509,7 @@
         const item = L.QUIZ[qIdx];
         body = `
           <div class="quiz-card">
-            <div class="m-eyebrow">ВОПРОС ${qIdx + 1} / ${L.QUIZ.length} · ${esc(item.topic)}</div>
+            <div class="m-eyebrow">ВОПРОС ${qIdx + 1} / ${L.QUIZ.length} · ${esc(item.topic)} · Счёт: ${qScore}</div>
             <h3 style="margin:6px 0 10px;font-size:16px">${esc(item.q)}</h3>
             <div id="quizOpts"></div>
             <p id="quizExp" style="margin-top:10px;font-weight:600"></p>
@@ -1366,16 +1517,13 @@
           </div>
         `;
       } else {
-        if (qScore > save.quizBest) {
-          save.quizBest = qScore;
-          persist();
-        }
-        if (qScore >= 8) unlockBadge('quiz');
+        if (qScore > save.quizBest) { save.quizBest = qScore; persist(); updateLandingUI(); }
+        if (qScore >= 15) { unlockBadge('quiz'); launchConfetti(70); }
         body = `
           <div class="quiz-card" style="text-align:center">
-            <div style="font-size:44px">${qScore >= 8 ? '🎓' : '🚀'}</div>
+            <div style="font-size:48px">${qScore >= 15 ? '🎓' : '🚀'}</div>
             <h3>Результат: ${qScore} из ${L.QUIZ.length}!</h3>
-            <p>${qScore >= 8 ? 'Блестяще! Ты отлично понимаешь алгоритмы и получил значок «Знаток алгоритмов»!' : 'Отличная тренировка! Попробуй ещё раз и набери 8+ для получения значка.'}</p>
+            <p>${qScore >= 15 ? 'Потрясающе! Ты настоящий знаток алгоритмов!' : 'Отличная тренировка! Набери 15+ правильных ответов для значка «Знаток алгоритмов».'}</p>
             <div class="modal-actions">
               <button id="quizRetry" class="btn-primary" type="button">Пройти ещё раз</button>
             </div>
@@ -1387,8 +1535,8 @@
         <div class="m-eyebrow">АКАДЕМИЯ ПРОГРАММИСТА</div>
         <h2 id="modalTitle">Учебник и тренажёр логики</h2>
         <div class="tabs-row">
-          <button id="gTabGuide" type="button" class="${tab === 'guide' ? 'active' : ''}">📘 Справочник</button>
-          <button id="gTabQuiz" type="button" class="${tab === 'quiz' ? 'active' : ''}">🧠 Викторина (лучший: ${save.quizBest}/10)</button>
+          <button id="gTabGuide" type="button" class="${tab === 'guide' ? 'active' : ''}">📘 Справочник (8 тем)</button>
+          <button id="gTabQuiz" type="button" class="${tab === 'quiz' ? 'active' : ''}">🧠 Викторина (${save.quizBest}/${L.QUIZ.length})</button>
         </div>
         ${body}
       `, true);
@@ -1424,24 +1572,21 @@
           $('quizOpts').append(b);
         });
       }
-      if ($('quizRetry')) {
-        $('quizRetry').onclick = () => { qIdx = 0; qScore = 0; qAnswered = false; draw(); };
-      }
+      if ($('quizRetry')) $('quizRetry').onclick = () => { qIdx = 0; qScore = 0; qAnswered = false; draw(); };
     }
     draw();
   }
 
-  // Badges Modal
   function openBadgesModal() {
     const unlockedCount = Object.keys(save.badges).length;
     showModal(`
-      <div class="m-eyebrow">ТВОИ НАГРАДЫ</div>
+      <div class="m-eyebrow">ЗАЛ СЛАВЫ</div>
       <h2 id="modalTitle">Достижения (${unlockedCount} / ${L.BADGES.length})</h2>
       <div class="badges-grid">
         ${L.BADGES.map((b) => `
           <div class="badge-card ${save.badges[b.id] ? 'unlocked' : ''}">
             <div class="badge-ico">${b.icon}</div>
-            <b style="font-size:13px;display:block">${esc(b.name)}</b>
+            <b style="font-size:12.5px;display:block">${esc(b.name)}</b>
             <small style="font-size:11px;color:#475569">${esc(b.desc)}</small>
           </div>
         `).join('')}
@@ -1449,14 +1594,13 @@
     `, true);
   }
 
-  // Settings Modal
   function openSettingsModal() {
     const s = save.settings;
     showModal(`
       <div class="m-eyebrow">НАСТРОЙКИ</div>
       <h2 id="modalTitle">Твой темп игры</h2>
       <div class="setting-row">
-        <div><strong>Космическая музыка</strong><small>Спокойный синтезаторный фон</small></div>
+        <div><strong>Космическая музыка</strong><small>У каждого мира своё звучание</small></div>
         <button id="sMusic" class="toggle-btn ${s.music ? 'on' : ''}" type="button">${s.music ? 'Вкл' : 'Выкл'}</button>
       </div>
       <div class="setting-row">
@@ -1464,11 +1608,11 @@
         <input id="sVol" type="range" min="0" max="100" value="${Math.round(s.volume * 100)}" style="width:120px" />
       </div>
       <div class="setting-row">
-        <div><strong>Звуки роботов</strong><small>Шаги, кристаллы, лазеры и победы</small></div>
+        <div><strong>Звуки и голоса роботов</strong><small>Шаги, кристаллы, телепорты, лазеры</small></div>
         <button id="sSfx" class="toggle-btn ${s.sfx ? 'on' : ''}" type="button">${s.sfx ? 'Вкл' : 'Выкл'}</button>
       </div>
       <div class="setting-row">
-        <div><strong>Виброотклик (APK)</strong><small>Лёгкая вибрация при нажатиях</small></div>
+        <div><strong>Виброотклик (APK)</strong><small>Тактильная отдача при нажатиях</small></div>
         <button id="sHap" class="toggle-btn ${s.haptics ? 'on' : ''}" type="button">${s.haptics ? 'Вкл' : 'Выкл'}</button>
       </div>
       <div class="setting-row">
@@ -1480,7 +1624,7 @@
         </select>
       </div>
       <div class="setting-row">
-        <div><strong>Режим учителя (открыть все 30)</strong><small>Доступ к любой станции сразу</small></div>
+        <div><strong>Режим учителя (открыть все 50)</strong><small>Доступ к любой станции сразу</small></div>
         <button id="sUnlock" class="toggle-btn ${s.unlockAll ? 'on' : ''}" type="button">${s.unlockAll ? 'Вкл' : 'Выкл'}</button>
       </div>
       <div class="modal-actions">
@@ -1496,6 +1640,7 @@
         Audio.init();
         persist();
         syncMusicBtns();
+        updateLandingUI();
         openSettingsModal();
       };
     };
@@ -1503,15 +1648,8 @@
     bindToggle('sSfx', 'sfx');
     bindToggle('sHap', 'haptics');
     bindToggle('sUnlock', 'unlockAll');
-    $('sVol').oninput = (e) => {
-      s.volume = Number(e.target.value) / 100;
-      Audio.configure(s);
-      persist();
-    };
-    $('sSpeed').onchange = (e) => {
-      s.speed = Number(e.target.value);
-      persist();
-    };
+    $('sVol').oninput = (e) => { s.volume = Number(e.target.value) / 100; Audio.configure(s); persist(); };
+    $('sSpeed').onchange = (e) => { s.speed = Number(e.target.value); persist(); };
     $('sDone').onclick = closeModal;
     $('sReset').onclick = () => {
       showModal(`
@@ -1532,19 +1670,19 @@
         updateLandingUI();
         closeModal();
         loadLevel(0);
-        toast('Прогресс сброшен. Можно начинать заново!');
+        toast('Прогресс сброшен!');
       };
     };
   }
 
   // ==================== 3D STATION WORKSHOP ====================
-  function newWorkshopLevel(size) {
+  function newWorkshopLevel(size, biomeIdx) {
     const n = size || 8;
     return {
       name: 'Моя космическая станция',
-      desc: 'Авторская 3D станция',
-      biome: 0,
-      allowed: ['F', 'L', 'R', 'P', 'C', 'J', 'U', 'F1', 'loop', 'if'],
+      desc: 'Авторский 3D-уровень',
+      biome: biomeIdx || 0,
+      allowed: ['F', 'L', 'R', 'P', 'C', 'J', 'U', 'F1', 'F2', 'loop', 'if'],
       start: { x: 1, z: n - 2, d: 0 },
       grid: Array.from({ length: n }, (_, z) =>
         Array.from({ length: n }, (_, x) =>
@@ -1563,14 +1701,15 @@
     testing = false;
     activeRobot = 0;
     editorScope = 'main';
-    level = save.custom ? E.clone(save.custom) : newWorkshopLevel(8);
-    programs = [[], []];
-    fn1s = [[], []];
+    level = save.custom ? E.clone(save.custom) : newWorkshopLevel(8, 0);
+    programs = [[], [], []];
+    fn1s = [[], [], []];
+    fn2s = [[], [], []];
     $('landing').classList.add('hidden');
     resetWorld();
     renderAll();
     renderWorkshopTools();
-    toast('Нажимай на клетки 3D станции, чтобы рисовать свой уровень!');
+    toast('Строй свою станцию: выбирай кисти, телепорты и любой из 8 биомов!');
   }
 
   function renderWorkshopTools() {
@@ -1583,6 +1722,7 @@
       ['C', '◆ Кристалл'],
       ['S', '☀ Модуль'],
       ['R', '🪨 Скала'],
+      ['T', '🌀 Телепорт'],
       ['K', '⚡ Пульт'],
       ['X', '🚧 Лазер'],
       ['B', '◎ Портал'],
@@ -1600,11 +1740,20 @@
     const rot = document.createElement('button');
     rot.type = 'button';
     rot.textContent = '↻ Поворот';
-    rot.onclick = () => {
-      level.start.d = (level.start.d + 1) % 4;
+    rot.onclick = () => { level.start.d = (level.start.d + 1) % 4; save.custom = E.clone(level); persist(); resetWorld(); };
+
+    const bioBtn = document.createElement('button');
+    bioBtn.type = 'button';
+    const bm = L.BIOMES[level.biome] || L.BIOMES[0];
+    bioBtn.textContent = `${bm.icon} Мир`;
+    bioBtn.onclick = () => {
+      level.biome = ((level.biome || 0) + 1) % L.BIOMES.length;
       save.custom = E.clone(level);
       persist();
-      resetWorld();
+      Audio.setMood(L.BIOMES[level.biome].musicMood);
+      renderAll();
+      renderWorkshopTools();
+      toast(`Мир: ${L.BIOMES[level.biome].name}`);
     };
 
     const sz = document.createElement('button');
@@ -1612,11 +1761,12 @@
     sz.textContent = `📐 ${level.grid.length}×${level.grid.length}`;
     sz.onclick = () => {
       const next = level.grid.length === 8 ? 10 : level.grid.length === 10 ? 12 : 8;
-      level = newWorkshopLevel(next);
+      level = newWorkshopLevel(next, level.biome);
       save.custom = E.clone(level);
       persist();
-      programs = [[], []];
-      fn1s = [[], []];
+      programs = [[], [], []];
+      fn1s = [[], [], []];
+      fn2s = [[], [], []];
       resetWorld();
       renderAll();
       renderWorkshopTools();
@@ -1627,7 +1777,7 @@
     share.textContent = '📤 Код';
     share.onclick = openWorkshopShare;
 
-    bar.append(rot, sz, share);
+    bar.append(rot, bioBtn, sz, share);
   }
 
   function paintTile(gx, gz) {
@@ -1637,9 +1787,14 @@
       level.start = { x: gx, z: gz, d: level.start.d };
     } else {
       if (level.start.x === gx && level.start.z === gz) { toast('Сначала перенеси старт на другую клетку.'); return; }
-      if (level.grid[gz][gx] === 'B' && brush !== 'B') { toast('На станции всегда должен быть один портал!'); return; }
-      if (brush === 'B') {
-        level.grid = level.grid.map((row) => row.map((t) => (t === 'B' ? '.' : t)));
+      if (level.grid[gz][gx] === 'B' && brush !== 'B') { toast('На станции должен оставаться один портал!'); return; }
+      if (brush === 'B') level.grid = level.grid.map((row) => row.map((t) => (t === 'B' ? '.' : t)));
+      if (brush === 'T') {
+        const tCount = level.grid.flat().filter((t) => t === 'T').length;
+        if (tCount >= 2 && level.grid[gz][gx] !== 'T') {
+          toast('Телепортов может быть только пара (2 штуки). Убери лишний сначала!');
+          return;
+        }
       }
       level.grid[gz][gx] = brush;
     }
@@ -1650,11 +1805,11 @@
   }
 
   function openWorkshopShare() {
-    const code = btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, start: level.start, grid: level.grid }))));
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify({ v: 2, biome: level.biome || 0, start: level.start, grid: level.grid }))));
     showModal(`
       <div class="m-eyebrow">МАСТЕРСКАЯ · ОБМЕН СТАНЦИЯМИ</div>
       <h2 id="modalTitle">Код твоей станции</h2>
-      <p>Скопируй код, чтобы отправить другу, или вставь чужой код и нажми «Загрузить»:</p>
+      <p>Скопируй код другу или вставь чужой код ниже:</p>
       <textarea id="wsCode" class="code-textarea">${code}</textarea>
       <div class="modal-actions">
         <button id="wsCopy" type="button">Копировать</button>
@@ -1669,11 +1824,12 @@
       try {
         const raw = JSON.parse(decodeURIComponent(escape(atob($('wsCode').value.trim()))));
         if (!Array.isArray(raw.grid) || raw.grid.length < 5 || raw.grid.length > 14 || !raw.start) throw new Error();
-        level = { ...newWorkshopLevel(raw.grid.length), start: raw.start, grid: raw.grid };
+        level = { ...newWorkshopLevel(raw.grid.length, raw.biome || 0), start: raw.start, grid: raw.grid };
         save.custom = E.clone(level);
         persist();
-        programs = [[], []];
-        fn1s = [[], []];
+        programs = [[], [], []];
+        fn1s = [[], [], []];
+        fn2s = [[], [], []];
         testing = false;
         resetWorld();
         renderAll();
@@ -1690,17 +1846,40 @@
   function updateLandingUI() {
     const done = save.stars.filter((n) => n > 0).length;
     const totalStars = save.stars.reduce((a, b) => a + b, 0);
-    const badgeCount = Object.keys(save.badges).length;
     const nextIdx = highestUnlocked();
+    const nextLv = L.LEVELS[nextIdx];
+    const nextBm = L.BIOMES[nextLv.biome] || L.BIOMES[0];
+    const heroObj = L.CHARACTERS.find((c) => c.id === save.heroSkin) || L.CHARACTERS[0];
 
-    $('startBtnLabel').textContent = done > 0
-      ? `Продолжить · Станция ${nextIdx + 1}`
-      : 'Начать приключение';
+    $('menuStarsCount').textContent = String(totalStars);
+    $('startBtnLabel').textContent = done > 0 ? 'Продолжить приключение' : 'Начать приключение';
+    $('startBtnSub').textContent = `Станция ${nextIdx + 1} · ${nextBm.icon} ${nextLv.name}`;
     $('landingMapSub').textContent = `${done} / ${L.LEVELS.length} пройдено`;
-    $('landingBadgesSub').textContent = `${badgeCount} / ${L.BADGES.length} значков`;
+    $('landingHeroSub').textContent = `Герой: ${heroObj.name}`;
+    $('landingQuizSub').textContent = `${L.QUIZ.length} задач · рекорд ${save.quizBest}/${L.QUIZ.length}`;
     $('lpText').textContent = done > 0 ? `Станций активировано: ${done} из ${L.LEVELS.length}` : 'Твой путь программиста начинается здесь';
     $('lpStars').textContent = `${totalStars} / ${L.LEVELS.length * 3} ★`;
     $('lpFill').style.width = `${(done / L.LEVELS.length) * 100}%`;
+
+    // Render 8-worlds progress ribbon!
+    const ribbon = $('worldsRibbon');
+    ribbon.replaceChildren();
+    L.CHAPTERS.forEach((ch) => {
+      const bm = L.BIOMES[ch.biome];
+      const allDone = save.stars.slice(ch.from, ch.to + 1).every((n) => n > 0);
+      const isOpen = nextIdx >= ch.from;
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'world-chip' + (allDone ? ' done' : isOpen ? ' open' : '');
+      chip.textContent = `${bm.icon} ${bm.short}${allDone ? ' ✓' : ''}`;
+      chip.disabled = !isOpen;
+      chip.onclick = () => {
+        Audio.init();
+        $('landing').classList.add('hidden');
+        loadLevel(ch.from);
+      };
+      ribbon.append(chip);
+    });
   }
 
   function syncMusicBtns() {
@@ -1732,6 +1911,9 @@
     if (document.hidden || time - lastFrame < (window.innerWidth < 760 ? 30 : 16)) return;
     lastFrame = time;
 
+    renderConfetti();
+    renderStarfield(time);
+
     if (!game3D || !hero3D) init3D();
     if (webglFailed) return;
 
@@ -1740,32 +1922,34 @@
       hero3D.render({
         level: L.HERO_LEVEL,
         grid: L.HERO_LEVEL.grid,
-        biome: L.BIOMES[0],
-        robots: [L.HERO_LEVEL.start],
+        biome: L.BIOMES[7],
+        robots: [L.HERO_LEVEL.start, L.HERO_LEVEL.start2, L.HERO_LEVEL.start3],
         activeRobot: 0,
         anim: null,
         completed: true,
         running: false,
         motion: save.settings.motion,
         levelId: 'hero',
+        heroSkin: save.heroSkin,
       }, time);
     } else if (level && world) {
       game3D.render({
         level,
         grid: world,
-        biome: builder ? L.BIOMES[0] : (L.BIOMES[level.biome] || L.BIOMES[0]),
+        biome: L.BIOMES[level.biome] || L.BIOMES[0],
         robots,
         activeRobot,
         anim,
         completed,
         running,
         motion: save.settings.motion,
-        levelId: builder ? 'workshop' : `lvl-${levelIndex}`,
+        levelId: builder ? `workshop-${level.biome}` : `lvl-${levelIndex}`,
+        heroSkin: save.heroSkin,
       }, time);
     }
   }
 
-  // ==================== EVENTS & ANDROID LIFECYCLE ====================
+  // ==================== EVENTS & ANDROID HOOKS ====================
   function bindEvents() {
     $('homeBtn').onclick = () => {
       if (running) { running = false; stepping = true; syncControls(); }
@@ -1774,15 +1958,18 @@
     };
     $('startBtn').onclick = () => {
       Audio.init();
+      Audio.fx('chirp');
       $('landing').classList.add('hidden');
       loadLevel(highestUnlocked());
     };
     $('landingMapBtn').onclick = openMapModal;
     $('mapBtn').onclick = openMapModal;
+    $('landingHangarBtn').onclick = openHangarModal;
+    $('hangarBtn').onclick = openHangarModal;
     $('landingWorkshopBtn').onclick = enterWorkshop;
     $('landingGuideBtn').onclick = () => openGuideModal('guide');
     $('guideBtn').onclick = () => openGuideModal('guide');
-    $('landingBadgesBtn').onclick = openBadgesModal;
+    $('menuStarsPill').onclick = openBadgesModal;
     $('badgesBtn').onclick = openBadgesModal;
     $('settingsBtn').onclick = openSettingsModal;
     $('menuSettingsBtn').onclick = openSettingsModal;
@@ -1818,13 +2005,14 @@
       resetWorld();
       renderSpecialBars();
       renderWorkspace();
-      setStatus('ready', `Карта ${mapVariant + 1}: предметы поменялись, программы сохранены!`);
+      setStatus('ready', `Карта ${mapVariant + 1}: кристаллы и модули поменялись!`);
       Audio.fx('click');
     };
 
     document.querySelectorAll('#scopeTabs .scope-tab').forEach((btn) => {
       btn.onclick = () => {
         editorScope = btn.dataset.scope;
+        if (editorScope === 'code') unlockBadge('python');
         renderWorkspace();
         renderPalette();
         syncControls();
@@ -1854,12 +2042,8 @@
     $('runBtn').onclick = runProgram;
     $('stepBtn').onclick = stepProgram;
     $('resetBtn').onclick = resetRobot;
+    $('modalBackdrop').onclick = (e) => { if (e.target === $('modalBackdrop')) closeModal(); };
 
-    $('modalBackdrop').onclick = (e) => {
-      if (e.target === $('modalBackdrop')) closeModal();
-    };
-
-    // Keyboard support for tablets/desktops
     document.addEventListener('keydown', (e) => {
       if (!$('modalBackdrop').classList.contains('hidden')) {
         if (e.key === 'Escape') closeModal();
@@ -1871,28 +2055,25 @@
       const k = e.key.toLowerCase();
       if (e.key === 'Enter') { e.preventDefault(); runProgram(); return; }
       if (e.key === 'Backspace') { e.preventDefault(); $('undoBtn').click(); return; }
-      if (isTeam() && (k === '1' || k === '2')) { switchRobot(Number(k) - 1); return; }
+      if (isTeam() && ['1', '2', '3'].includes(k)) {
+        const idx = Number(k) - 1;
+        if (idx < robotCnt()) switchRobot(idx);
+        return;
+      }
 
-      const map = { arrowup: 'F', w: 'F', arrowleft: 'L', a: 'L', arrowright: 'R', d: 'R', p: 'P', c: 'C', j: 'J', e: 'U', f: 'F1', x: 'loop', i: 'if' };
+      const map = { arrowup: 'F', w: 'F', arrowleft: 'L', a: 'L', arrowright: 'R', d: 'R', p: 'P', c: 'C', j: 'J', e: 'U', x: 'loop', i: 'if' };
       const code = map[k];
       if (code && allowedCommands().includes(code)) {
         e.preventDefault();
         if (code === 'loop') openLoopModal(null);
         else if (code === 'if') openIfModal(null);
-        else if (!(editorScope === 'fn1' && code === 'F1')) addBlock(code);
+        else if (!isFnSelfCall(code)) addBlock(code);
       }
     });
 
-    // Android lifecycle hooks
     window.onAndroidBack = function () {
-      if (!$('modalBackdrop').classList.contains('hidden')) {
-        closeModal();
-        return true;
-      }
-      if ($('landing').classList.contains('hidden')) {
-        $('homeBtn').click();
-        return true;
-      }
+      if (!$('modalBackdrop').classList.contains('hidden')) { closeModal(); return true; }
+      if ($('landing').classList.contains('hidden')) { $('homeBtn').click(); return true; }
       return false;
     };
 

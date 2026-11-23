@@ -31,53 +31,57 @@ LEVELS.forEach((lvl, idx) => {
   const num = String(idx + 1).padStart(2, '0');
   const errors = [];
 
-  // 1. Check rectangular grid
   const cols = lvl.grid[0]?.length || 0;
   if (!cols || lvl.grid.some((r) => r.length !== cols)) {
     errors.push('Grid is not rectangular');
   }
 
-  // 2. Check allowed commands cover model
   const allowed = new Set(lvl.allowed || []);
-  for (const p of [lvl.model, lvl.model2, lvl.modelFn1, lvl.modelFn2]) {
+  for (const p of [lvl.model, lvl.model2, lvl.model3, lvl.modelFn1, lvl.modelFn2, lvl.model2Fn1, lvl.model3Fn1]) {
     for (const c of usedCommands(p)) {
       if (!allowed.has(c)) errors.push(`Model uses disallowed command "${c}"`);
     }
   }
 
-  // 3. Verify model solution on variant 0 (and variant 1 if adaptive)
-  const programs = lvl.start2 ? [lvl.model, lvl.model2 || []] : [lvl.model];
-  const fns = lvl.start2 ? [lvl.modelFn1 || [], lvl.modelFn2 || []] : [lvl.modelFn1 || []];
+  const cnt = Engine.robotCount(lvl);
+  const programs = [lvl.model, lvl.model2 || [], lvl.model3 || []].slice(0, cnt);
+  const fn1s = [lvl.modelFn1 || [], lvl.model2Fn1 || [], lvl.model3Fn1 || []].slice(0, cnt);
+  const fn2s = [lvl.modelFn2 || [], lvl.model2Fn2 || [], lvl.model3Fn2 || []].slice(0, cnt);
 
-  const sim0 = Engine.simulateMission(programs, fns, lvl, 0);
+  const sim0 = Engine.simulateMission(programs, fn1s, fn2s, lvl, 0);
   if (!sim0.ok) errors.push(`Model fails variant 0: ${sim0.message}`);
 
   if (lvl.adaptiveCells) {
-    const sim1 = Engine.simulateMission(programs, fns, lvl, 1);
+    const sim1 = Engine.simulateMission(programs, fn1s, fn2s, lvl, 1);
     if (!sim1.ok) errors.push(`Model fails variant 1: ${sim1.message}`);
   }
 
-  // 4. Verify curriculum rules on model
-  const currErr = Engine.validateCurriculum(programs, fns, lvl);
+  const currErr = Engine.validateCurriculum(programs, fn1s, fn2s, lvl);
   if (currErr) errors.push(`Model fails curriculum: ${currErr}`);
 
-  // 5. Verify starter buggy code ACTUALLY fails (if present)
   if (lvl.starter || lvl.starterFn1) {
-    const sProgs = lvl.start2 ? [lvl.starter || [], lvl.model2 || []] : [lvl.starter || []];
-    const sFns = lvl.start2 ? [lvl.starterFn1 || [], lvl.modelFn2 || []] : [lvl.starterFn1 || []];
-    const simStarter = Engine.simulateMission(sProgs, sFns, lvl, 0);
+    const sProgs = [lvl.starter || [], lvl.model2 || [], lvl.model3 || []].slice(0, cnt);
+    const sFn1 = [lvl.starterFn1 || [], [], []].slice(0, cnt);
+    const simStarter = Engine.simulateMission(sProgs, sFn1, [[], [], []], lvl, 0);
     if (simStarter.ok) errors.push('Starter buggy code unexpectedly PASSES!');
   }
 
   const blocks = programs.reduce((s, p) => s + Engine.countBlocks(p), 0)
-    + fns.reduce((s, f) => s + Engine.countBlocks(f), 0);
+    + fn1s.reduce((s, f) => s + Engine.countBlocks(f), 0)
+    + fn2s.reduce((s, f) => s + Engine.countBlocks(f), 0);
 
   if (errors.length) {
     failed++;
     console.error(`❌ [${num}] ${lvl.name}`);
     errors.forEach((e) => console.error(`    - ${e}`));
   } else {
-    console.log(`✅ [${num}] ${lvl.name} (${blocks}/${lvl.maxBlocks} blocks, ${sim0.actions} actions${lvl.adaptiveCells ? ', 2 variants OK' : ''}${lvl.starter ? ', bug verified' : ''})`);
+    const tags = [
+      cnt > 1 ? `${cnt} bots` : null,
+      lvl.grid.flat().includes('T') ? 'teleport' : null,
+      lvl.adaptiveCells ? '2 variants' : null,
+      lvl.starter ? 'bug OK' : null,
+    ].filter(Boolean).join(', ');
+    console.log(`✅ [${num}] ${lvl.name} (${blocks}/${lvl.maxBlocks} blocks, ${sim0.actions} acts${tags ? ' · ' + tags : ''})`);
   }
 });
 

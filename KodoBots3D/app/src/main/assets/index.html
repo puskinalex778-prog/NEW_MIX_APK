@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#0e172a" />
+  <meta name="theme-color" content="#090e1f" />
   <title>КодоБоты 3D — Звёздная Академия Программирования</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -18,10 +18,13 @@
       </span>
     </button>
     <nav class="top-actions" aria-label="Навигация">
-      <button class="chip-btn" id="mapBtn" type="button" title="Карта станций">
+      <button class="chip-btn" id="mapBtn" type="button" title="Карта 50 станций">
         <span aria-hidden="true">🗺</span><span class="hide-xs">Станции</span>
       </button>
-      <button class="chip-btn" id="guideBtn" type="button" title="Справочник и викторина">
+      <button class="chip-btn" id="hangarBtn" type="button" title="Ангар героев">
+        <span aria-hidden="true">🛸</span><span class="hide-xs">Герои</span>
+      </button>
+      <button class="chip-btn" id="guideBtn" type="button" title="Учебник и викторина">
         <span aria-hidden="true">📘</span><span class="hide-xs">Учебник</span>
       </button>
       <button class="icon-btn" id="badgesBtn" type="button" title="Достижения" aria-label="Достижения">🏆</button>
@@ -40,8 +43,8 @@
         <div class="mission-hud" id="missionHud">
           <div class="mission-meta">
             <span class="pill pill-chapter" id="chapterLabel">ОСНОВЫ КОДА</span>
-            <span class="pill pill-level" id="levelTag">Станция 01 / 30</span>
-            <span class="pill pill-biome" id="biomeTag">ЛУНА</span>
+            <span class="pill pill-level" id="levelTag">Станция 01 / 50</span>
+            <span class="pill pill-biome" id="biomeTag">🌙 ЛУНА</span>
           </div>
           <h1 id="levelName">Первый импульс</h1>
           <p id="levelDesc"></p>
@@ -63,19 +66,18 @@
 
       <!-- RIGHT / BOTTOM: CODING WORKBENCH -->
       <section class="code-panel" aria-label="Редактор алгоритма">
-        <!-- Team selector + Adaptive variant bar -->
         <div class="special-bars" id="specialBars">
           <div class="robot-tabs hidden" id="robotTabs" role="group" aria-label="Выбор робота"></div>
           <button class="variant-btn hidden" id="variantBtn" type="button">
-            <span>🔀 Карта 1 / 2 · сменить датчики</span>
+            <span>🔀 Карта 1 / 2 · переключить датчики</span>
           </button>
         </div>
 
-        <!-- Program / F1 / Python View Tabs + Counter -->
         <div class="editor-header">
           <div class="scope-tabs" id="scopeTabs" role="tablist">
             <button class="scope-tab active" id="tabMain" type="button" data-scope="main">Блоки</button>
             <button class="scope-tab hidden" id="tabFn1" type="button" data-scope="fn1">ƒ F1</button>
+            <button class="scope-tab hidden" id="tabFn2" type="button" data-scope="fn2">ƒ F2</button>
             <button class="scope-tab" id="tabCode" type="button" data-scope="code">&lt;/&gt; Python</button>
           </div>
           <div class="editor-meta">
@@ -85,33 +87,33 @@
           </div>
         </div>
 
-        <!-- Requirement badges -->
         <div class="req-strip hidden" id="reqStrip"></div>
 
-        <!-- Workspace: Visual Blocks OR Python Code -->
         <div class="workspace" id="workspace" aria-label="Список блоков алгоритма"></div>
         <div class="code-view hidden" id="codeView" aria-label="Предпросмотр кода Python"></div>
 
-        <!-- Status message -->
         <div class="status-bar" id="statusBar" role="status" aria-live="polite"></div>
 
-        <!-- Tactile Command Palette -->
         <div class="palette" id="palette" aria-label="Палитра команд"></div>
 
-        <!-- Sticky Execution Controls -->
         <div class="exec-dock">
-          <button class="dock-icon" id="resetBtn" type="button" title="Вернуть на старт (код сохранится)" aria-label="На старт">↺</button>
-          <button class="dock-icon" id="stepBtn" type="button" title="Пошаговая отладка (1 действие)" aria-label="Один шаг">▷</button>
+          <button class="dock-icon" id="resetBtn" type="button" title="Вернуть на старт" aria-label="На старт">↺</button>
+          <button class="dock-icon" id="stepBtn" type="button" title="Пошаговая отладка" aria-label="Один шаг">▷</button>
           <button class="dock-run" id="runBtn" type="button">▶ Запустить</button>
         </div>
       </section>
     </div>
   </main>
 
-  <!-- LANDING / MAIN MENU OVERLAY -->
+  <!-- GORGEOUS COSMIC MAIN MENU OVERLAY -->
   <section class="landing" id="landing" aria-label="Главное меню">
+    <canvas class="starfield-canvas" id="starfieldCanvas" aria-hidden="true"></canvas>
+    <div class="aurora aurora-1" aria-hidden="true"></div>
+    <div class="aurora aurora-2" aria-hidden="true"></div>
+
     <div class="landing-3d">
-      <canvas id="heroCanvas" aria-label="Интерактивная 3D станция"></canvas>
+      <canvas id="heroCanvas" aria-label="Интерактивная 3D станция с командой роботов"></canvas>
+      <div class="hero-drag-hint">↻ Покрути станцию пальцем или мышкой</div>
     </div>
     <div class="landing-glow" aria-hidden="true"></div>
 
@@ -121,44 +123,65 @@
           <span class="landing-badge">🤖</span>
           <div>
             <b>КОДОБОТЫ 3D</b>
-            <small>Звёздная Академия Программирования</small>
+            <small>Звёздная Академия Программирования · v2.0</small>
           </div>
         </div>
         <div class="landing-top-btns">
+          <button class="star-pill-btn" id="menuStarsPill" type="button" title="Достижения">
+            <span>★</span><b id="menuStarsCount">0</b>
+          </button>
           <button class="circle-btn" id="menuMusicBtn" type="button" aria-label="Музыка">♫</button>
           <button class="circle-btn" id="menuSettingsBtn" type="button" aria-label="Настройки">⚙</button>
         </div>
       </header>
 
       <div class="landing-content">
-        <div class="kicker"><span class="pulse-dot"></span> ОБУЧЕНИЕ ПРОГРАММИРОВАНИЮ В 3D</div>
-        <h1>Управляй роботами.<br /><span>Пиши код.</span></h1>
+        <div class="kicker"><span class="pulse-dot"></span> 8 МИРОВ · 4 ГЕРОЯ · 50 КОСМИЧЕСКИХ СТАНЦИЙ</div>
+        <h1>Оживи галактику.<br /><span>Силой кода!</span></h1>
         <p class="landing-intro">
-          Помоги Пикселю и Битику оживить 30 космических станций! Освой алгоритмы, циклы, отладку, функции <b>F1</b> и умные датчики <b>Если…</b>
+          Собери команду из <b>Пикселя, Битика, Вольта и Луны</b>! Решай 3D-головоломки с циклами, отладкой, функциями <b>F1/F2</b>, телепортами и умными датчиками <b>Если…</b>
         </p>
+
+        <!-- 8 Worlds Journey Ribbon -->
+        <div class="worlds-ribbon" id="worldsRibbon" aria-label="Миры галактики"></div>
 
         <div class="landing-actions">
           <button class="cta-primary" id="startBtn" type="button">
-            <span id="startBtnLabel">Начать приключение</span>
-            <span aria-hidden="true">→</span>
+            <span class="cta-left">
+              <b id="startBtnLabel">Начать приключение</b>
+              <small id="startBtnSub">Станция 1 · Лунная База</small>
+            </span>
+            <span class="cta-arrow" aria-hidden="true">▶</span>
           </button>
 
           <div class="cta-grid">
-            <button class="cta-card" id="landingMapBtn" type="button">
-              <b>🗺 Карта станций</b>
-              <small id="landingMapSub">0 / 30 пройдено</small>
+            <button class="cta-card card-blue" id="landingMapBtn" type="button">
+              <span class="card-ico">🗺</span>
+              <div>
+                <b>Карта станций</b>
+                <small id="landingMapSub">0 / 50 пройдено</small>
+              </div>
             </button>
-            <button class="cta-card" id="landingWorkshopBtn" type="button">
-              <b>🛠 Мастерская</b>
-              <small>Построй свой 3D мир</small>
+            <button class="cta-card card-pink" id="landingHangarBtn" type="button">
+              <span class="card-ico">🛸</span>
+              <div>
+                <b>Ангар героев</b>
+                <small id="landingHeroSub">Герой: Пиксель</small>
+              </div>
             </button>
-            <button class="cta-card" id="landingGuideBtn" type="button">
-              <b>📘 Учебник и тест</b>
-              <small>10 задач на логику</small>
+            <button class="cta-card card-teal" id="landingWorkshopBtn" type="button">
+              <span class="card-ico">🛠</span>
+              <div>
+                <b>Мастерская 3D</b>
+                <small>Построй свой мир</small>
+              </div>
             </button>
-            <button class="cta-card" id="landingBadgesBtn" type="button">
-              <b>🏆 Достижения</b>
-              <small id="landingBadgesSub">0 / 9 значков</small>
+            <button class="cta-card card-amber" id="landingGuideBtn" type="button">
+              <span class="card-ico">📘</span>
+              <div>
+                <b>Учебник и тест</b>
+                <small id="landingQuizSub">20 задач · 0/20</small>
+              </div>
             </button>
           </div>
         </div>
@@ -166,17 +189,20 @@
         <div class="landing-progress">
           <div class="lp-row">
             <span id="lpText">Твой путь программиста начинается здесь</span>
-            <b id="lpStars">0 / 90 ★</b>
+            <b id="lpStars">0 / 150 ★</b>
           </div>
           <div class="lp-track"><span id="lpFill"></span></div>
         </div>
       </div>
 
       <footer class="landing-footer">
-        <span>Без таймеров и потери жизней · 100% офлайн · Python-код в реальном времени</span>
+        <span>✨ Без таймеров и жизней · 100% офлайн · Живой Python-код · 15 достижений</span>
       </footer>
     </div>
   </section>
+
+  <!-- 2D CONFETTI CELEBRATION OVERLAY -->
+  <canvas class="confetti-canvas" id="confettiCanvas" aria-hidden="true"></canvas>
 
   <!-- MODAL SYSTEM -->
   <div class="modal-backdrop hidden" id="modalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
