@@ -46,22 +46,28 @@
             <span class="pill pill-level" id="levelTag">Станция 01 / 50</span>
             <span class="pill pill-biome" id="biomeTag">🌙 ЛУНА</span>
           </div>
-          <h1 id="levelName">Первый импульс</h1>
+          <div class="mission-title-row">
+            <h1 id="levelName">Первый импульс</h1>
+            <button class="desc-toggle-btn" id="descToggleBtn" type="button" aria-label="Показать описание задания" title="Описание задания">ℹ</button>
+          </div>
           <p id="levelDesc"></p>
         </div>
 
-        <div class="stage-controls" aria-label="Управление камерой и атмосферой">
-          <button class="float-btn" id="zoomInBtn" type="button" title="Приблизить" aria-label="Приблизить">＋</button>
-          <button class="float-btn" id="zoomOutBtn" type="button" title="Отдалить" aria-label="Отдалить">−</button>
-          <button class="float-btn" id="lightBtn" type="button" title="Сменить освещение" aria-label="Сменить освещение">☀</button>
-          <button class="float-btn" id="resetCamBtn" type="button" title="Сбросить камеру" aria-label="Сбросить камеру">⟳</button>
+        <div class="stage-controls" id="stageControls" aria-label="Управление камерой и атмосферой">
+          <button class="float-btn cam-toggle-btn" id="camMenuBtn" type="button" title="Камера и свет" aria-label="Камера и свет" aria-expanded="false">🎛</button>
+          <div class="cam-menu" id="camMenu">
+            <button class="float-btn" id="zoomInBtn" type="button" title="Приблизить" aria-label="Приблизить">＋</button>
+            <button class="float-btn" id="zoomOutBtn" type="button" title="Отдалить" aria-label="Отдалить">−</button>
+            <button class="float-btn" id="lightBtn" type="button" title="Сменить освещение" aria-label="Сменить освещение">☀</button>
+            <button class="float-btn" id="resetCamBtn" type="button" title="Сбросить камеру" aria-label="Сбросить камеру">⟳</button>
+          </div>
           <button class="float-btn hint-btn" id="hintBtn" type="button" title="Подсказка" aria-label="Подсказка">💡</button>
         </div>
 
         <div class="objectives" id="objectives" aria-label="Задачи миссии"></div>
 
         <div class="coach-card hidden" id="coachCard" role="status"></div>
-        <div class="workshop-bar hidden" id="workshopBar"></div>
+        <div class="workshop-dock hidden" id="workshopBar"></div>
       </section>
 
       <!-- RIGHT / BOTTOM: CODING WORKBENCH -->

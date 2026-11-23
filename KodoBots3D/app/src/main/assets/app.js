@@ -185,6 +185,7 @@
   let builder = false;
   let testing = false;
   let brush = '.';
+  let workshopMenuOpen = false;
   let mapVariant = 0;
 
   // Support up to 3 robots!
@@ -294,8 +295,10 @@
 
   function loadLevel(idx) {
     stopExec();
+    closeStagePopovers();
     builder = false;
     testing = false;
+    workshopMenuOpen = false;
     levelIndex = idx;
     save.lastLevel = idx;
     persist();
@@ -1694,11 +1697,53 @@
     };
   }
 
+  function closeStagePopovers() {
+    let closed = false;
+    const sc = $('stageControls');
+    if (sc && sc.classList.contains('cam-open')) {
+      sc.classList.remove('cam-open');
+      $('camMenuBtn')?.setAttribute('aria-expanded', 'false');
+      closed = true;
+    }
+    const hud = $('missionHud');
+    if (hud && hud.classList.contains('desc-open')) {
+      hud.classList.remove('desc-open');
+      $('descToggleBtn')?.classList.remove('open');
+      closed = true;
+    }
+    if (workshopMenuOpen) {
+      workshopMenuOpen = false;
+      if (builder && !testing) renderWorkshopTools();
+      closed = true;
+    }
+    return closed;
+  }
+
+  function placeCoachCard() {
+    const card = $('coachCard');
+    if (!card) return;
+    const isCompact = window.matchMedia('(max-width: 1024px)').matches;
+    if (isCompact) {
+      const targetParent = document.querySelector('.code-panel');
+      const header = targetParent?.querySelector('.editor-header');
+      if (targetParent && header && card.parentElement !== targetParent) {
+        targetParent.insertBefore(card, header);
+      }
+    } else {
+      const stage = $('stagePanel');
+      if (stage && card.parentElement !== stage) {
+        stage.append(card);
+      }
+    }
+  }
+
   function enterWorkshop() {
     Audio.init();
     stopExec();
+    closeStagePopovers();
     builder = true;
     testing = false;
+    workshopMenuOpen = false;
     activeRobot = 0;
     editorScope = 'main';
     level = save.custom ? E.clone(save.custom) : newWorkshopLevel(8, 0);
@@ -1709,7 +1754,7 @@
     resetWorld();
     renderAll();
     renderWorkshopTools();
-    toast('Строй свою станцию: выбирай кисти, телепорты и любой из 8 биомов!');
+    toast('Нажми «Кисть ▾» внизу справа, чтобы выбрать элемент, затем тапай по клеткам!');
   }
 
   function renderWorkshopTools() {
@@ -1728,56 +1773,130 @@
       ['B', '◎ Портал'],
       ['start', '🤖 Старт'],
     ];
-    brushes.forEach(([v, lbl]) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = lbl;
-      b.className = brush === v ? 'selected' : '';
-      b.onclick = () => { brush = v; renderWorkshopTools(); };
-      bar.append(b);
-    });
-
-    const rot = document.createElement('button');
-    rot.type = 'button';
-    rot.textContent = '↻ Поворот';
-    rot.onclick = () => { level.start.d = (level.start.d + 1) % 4; save.custom = E.clone(level); persist(); resetWorld(); };
-
-    const bioBtn = document.createElement('button');
-    bioBtn.type = 'button';
+    const currentBrushLabel = (brushes.find(([v]) => v === brush) || brushes[0])[1];
     const bm = L.BIOMES[level.biome] || L.BIOMES[0];
-    bioBtn.textContent = `${bm.icon} Мир`;
-    bioBtn.onclick = () => {
-      level.biome = ((level.biome || 0) + 1) % L.BIOMES.length;
-      save.custom = E.clone(level);
-      persist();
-      Audio.setMood(L.BIOMES[level.biome].musicMood);
-      renderAll();
-      renderWorkshopTools();
-      toast(`Мир: ${L.BIOMES[level.biome].name}`);
-    };
 
-    const sz = document.createElement('button');
-    sz.type = 'button';
-    sz.textContent = `📐 ${level.grid.length}×${level.grid.length}`;
-    sz.onclick = () => {
-      const next = level.grid.length === 8 ? 10 : level.grid.length === 10 ? 12 : 8;
-      level = newWorkshopLevel(next, level.biome);
+    // Popover catalog (only visible when expanded — never covers 3D station while painting!)
+    if (workshopMenuOpen) {
+      const pop = document.createElement('div');
+      pop.className = 'ws-popover';
+
+      const head = document.createElement('div');
+      head.className = 'ws-pop-head';
+      head.innerHTML = '<span>🎨 Элементы станции</span>';
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'ws-pop-close';
+      closeBtn.textContent = '×';
+      closeBtn.setAttribute('aria-label', 'Скрыть панель конструктора');
+      closeBtn.onclick = () => { workshopMenuOpen = false; renderWorkshopTools(); };
+      head.append(closeBtn);
+      pop.append(head);
+
+      const grid = document.createElement('div');
+      grid.className = 'ws-brush-grid';
+      brushes.forEach(([v, lbl]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = lbl;
+        b.className = brush === v ? 'selected' : '';
+        b.onclick = () => {
+          brush = v;
+          workshopMenuOpen = false;
+          Audio.fx('click');
+          renderWorkshopTools();
+        };
+        grid.append(b);
+      });
+      pop.append(grid);
+
+      const tools = document.createElement('div');
+      tools.className = 'ws-tools-grid';
+
+      const rot = document.createElement('button');
+      rot.type = 'button';
+      rot.textContent = '↻ Поворот старта';
+      rot.onclick = () => {
+        level.start.d = (level.start.d + 1) % 4;
+        save.custom = E.clone(level);
+        persist();
+        resetWorld();
+        Audio.fx('click');
+      };
+
+      const bioBtn = document.createElement('button');
+      bioBtn.type = 'button';
+      bioBtn.textContent = `${bm.icon} Мир: ${bm.short}`;
+      bioBtn.onclick = () => {
+        level.biome = ((level.biome || 0) + 1) % L.BIOMES.length;
+        save.custom = E.clone(level);
+        persist();
+        Audio.setMood(L.BIOMES[level.biome].musicMood);
+        renderAll();
+        renderWorkshopTools();
+        toast(`Мир: ${L.BIOMES[level.biome].name}`);
+      };
+
+      const sz = document.createElement('button');
+      sz.type = 'button';
+      sz.textContent = `📐 Поле ${level.grid.length}×${level.grid.length}`;
+      sz.onclick = () => {
+        const next = level.grid.length === 8 ? 10 : level.grid.length === 10 ? 12 : 8;
+        level = newWorkshopLevel(next, level.biome);
+        save.custom = E.clone(level);
+        persist();
+        programs = [[], [], []];
+        fn1s = [[], [], []];
+        fn2s = [[], [], []];
+        resetWorld();
+        renderAll();
+        renderWorkshopTools();
+      };
+
+      const share = document.createElement('button');
+      share.type = 'button';
+      share.textContent = '📤 Код карты';
+      share.onclick = () => { workshopMenuOpen = false; renderWorkshopTools(); openWorkshopShare(); };
+
+      tools.append(rot, bioBtn, sz, share);
+      pop.append(tools);
+      bar.append(pop);
+    }
+
+    // Compact floating trigger bar (takes minimal corner space!)
+    const row = document.createElement('div');
+    row.className = 'ws-trigger-row';
+
+    const quickRot = document.createElement('button');
+    quickRot.type = 'button';
+    quickRot.className = 'ws-mini-btn';
+    quickRot.title = 'Повернуть старт робота';
+    quickRot.setAttribute('aria-label', 'Повернуть старт робота');
+    quickRot.textContent = '↻';
+    quickRot.onclick = () => {
+      level.start.d = (level.start.d + 1) % 4;
       save.custom = E.clone(level);
       persist();
-      programs = [[], [], []];
-      fn1s = [[], [], []];
-      fn2s = [[], [], []];
       resetWorld();
-      renderAll();
+      Audio.fx('click');
+    };
+
+    const togglePill = document.createElement('button');
+    togglePill.type = 'button';
+    togglePill.id = 'wsToggleBtn';
+    togglePill.className = 'ws-pill-btn' + (workshopMenuOpen ? ' open' : '');
+    togglePill.setAttribute('aria-expanded', String(workshopMenuOpen));
+    togglePill.textContent = `🎨 ${currentBrushLabel} ${workshopMenuOpen ? '▴' : '▾'}`;
+    togglePill.onclick = () => {
+      const opening = !workshopMenuOpen;
+      closeStagePopovers();
+      workshopMenuOpen = opening;
+      Audio.fx('click');
       renderWorkshopTools();
     };
 
-    const share = document.createElement('button');
-    share.type = 'button';
-    share.textContent = '📤 Код';
-    share.onclick = openWorkshopShare;
-
-    bar.append(rot, bioBtn, sz, share);
+    row.append(quickRot, togglePill);
+    bar.append(row);
   }
 
   function paintTile(gx, gz) {
@@ -1988,7 +2107,7 @@
     $('zoomInBtn').onclick = () => game3D && game3D.zoom(0.84);
     $('zoomOutBtn').onclick = () => game3D && game3D.zoom(1.18);
     $('resetCamBtn').onclick = () => { game3D && game3D.resetCamera(); Audio.fx('click'); };
-    $('hintBtn').onclick = openHintModal;
+    $('hintBtn').onclick = () => { closeStagePopovers(); openHintModal(); };
     $('lightBtn').onclick = () => {
       if (!game3D) return;
       const ph = game3D.setPhase(game3D.phaseIndex + 1);
@@ -1997,6 +2116,35 @@
       toast(`Освещение: ${ph.name}`);
       Audio.fx('click');
     };
+
+    $('camMenuBtn').onclick = () => {
+      const sc = $('stageControls');
+      const willOpen = !sc.classList.contains('cam-open');
+      closeStagePopovers();
+      if (willOpen) {
+        sc.classList.add('cam-open');
+        $('camMenuBtn').setAttribute('aria-expanded', 'true');
+      }
+      Audio.fx('click');
+    };
+
+    $('descToggleBtn').onclick = () => {
+      const hud = $('missionHud');
+      const willOpen = !hud.classList.contains('desc-open');
+      closeStagePopovers();
+      if (willOpen) {
+        hud.classList.add('desc-open');
+        $('descToggleBtn').classList.add('open');
+      }
+      Audio.fx('click');
+    };
+
+    $('sceneCanvas').addEventListener('pointerdown', () => {
+      closeStagePopovers();
+    });
+
+    window.addEventListener('resize', placeCoachCard);
+    placeCoachCard();
 
     $('variantBtn').onclick = () => {
       if (running || anim) return;
@@ -2073,6 +2221,7 @@
 
     window.onAndroidBack = function () {
       if (!$('modalBackdrop').classList.contains('hidden')) { closeModal(); return true; }
+      if (closeStagePopovers()) return true;
       if ($('landing').classList.contains('hidden')) { $('homeBtn').click(); return true; }
       return false;
     };
