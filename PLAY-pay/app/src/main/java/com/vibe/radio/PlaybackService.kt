@@ -1,7 +1,13 @@
 package com.vibe.radio
 
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.media.AudioManager
+import androidx.annotation.OptIn
+import androidx.core.content.ContextCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -28,15 +34,29 @@ import com.vibe.radio.data.AppSettings
  * Фоновый сервис: играет при свёрнутом приложении и заблокированном экране,
  * показывает уведомление и управление на экране блокировки (MediaSession).
  */
-@UnstableApi
+@OptIn(UnstableApi::class)
 class PlaybackService : MediaSessionService() {
 
     private var session: MediaSession? = null
     private var exo: ExoPlayer? = null
 
+    private val noisyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY && AppSettings.pauseOnDisconnect) {
+                exo?.pause()
+            }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         AppSettings.init(this)
+        ContextCompat.registerReceiver(
+            this,
+            noisyReceiver,
+            IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
 
         val sink = DefaultAudioSink.Builder(this)
             .setAudioProcessors(arrayOf(FxAudioProcessor()))
@@ -65,7 +85,7 @@ class PlaybackService : MediaSessionService() {
                     .build(),
                 true,
             )
-            .setHandleAudioBecomingNoisy(AppSettings.pauseOnDisconnect)
+            .setHandleAudioBecomingNoisy(false)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
         player.setSkipSilenceEnabled(AppSettings.skipSilence)
@@ -103,7 +123,6 @@ class PlaybackService : MediaSessionService() {
     /** Применить изменённые настройки без перезапуска плеера. */
     private fun applySettings() {
         val p = exo ?: return
-        p.setHandleAudioBecomingNoisy(AppSettings.pauseOnDisconnect)
         p.setSkipSilenceEnabled(AppSettings.skipSilence)
         AudioFx.applyEqualizer()
     }
@@ -116,6 +135,7 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        runCatching { unregisterReceiver(noisyReceiver) }
         AudioFx.settingsHook = null
         AudioFx.releaseEqualizer()
         exo = null

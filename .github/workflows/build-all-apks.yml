@@ -238,7 +238,7 @@ jobs:
       - name: Build APK
         working-directory: PLAY-pay
         run: |
-          gradle assembleDebug --stacktrace
+          gradle assembleDebug --console=plain
           mkdir -p out_apks
           cp app/build/outputs/apk/debug/app-debug.apk "out_apks/PLAY-pay-1.0.${{ github.run_number }}.apk"
 
