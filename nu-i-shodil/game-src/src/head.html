@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Ну и сходил…</title>
+<!--FONTS-->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#0b0d10;color:#eef1f4;font-family:Inter,system-ui,sans-serif;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+.red{color:#ff4636}
+.muted{color:#9aa4ae}
+.small{font-size:12px}
+/* ---------- screens ---------- */
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:30;overflow:auto;padding:20px;background:radial-gradient(ellipse at 30% 20%,rgba(20,26,34,.55),rgba(5,6,8,.92))}
+.screen.clear{background:linear-gradient(90deg,rgba(5,6,8,0) 0%,rgba(5,6,8,.15) 40%,rgba(5,6,8,.9) 62%)}
+.panel{background:rgba(13,16,21,.9);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:26px 28px;max-width:980px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55);max-height:calc(100vh - 40px);overflow:auto}
+.panel.narrow{max-width:560px}
+h1.title{font-family:'Russo One',Inter,sans-serif;font-weight:400;font-size:clamp(40px,7.5vw,88px);line-height:1;letter-spacing:.5px}
+h2{font-family:'Russo One',Inter,sans-serif;font-weight:400;font-size:clamp(22px,3.4vw,34px);margin-bottom:6px}
+h3{font-size:15px;font-weight:800;margin:14px 0 6px;letter-spacing:.3px}
+p{line-height:1.5;margin:6px 0}
+.btn{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#e5352b;color:#fff;border:0;border-radius:10px;padding:12px 20px;font:700 15px Inter,sans-serif;cursor:pointer;transition:transform .08s,filter .15s;margin:4px}
+.btn:hover{filter:brightness(1.12)}.btn:active{transform:scale(.97)}
+.btn.ghost{background:rgba(255,255,255,.08);color:#e9edf1}
+.btn.big{padding:15px 28px;font-size:17px}
+.btn[disabled]{opacity:.35;pointer-events:none}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.menuWrap{display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:520px;width:100%}
+.menuWrap .btn{width:100%;justify-content:flex-start}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(229,53,43,.18);color:#ff8a7f;letter-spacing:.4px;text-transform:uppercase}
+/* main menu */
+#scrMain{justify-content:flex-start;padding-left:6vw;background:linear-gradient(90deg,rgba(5,6,8,.92) 0%,rgba(5,6,8,.6) 45%,rgba(5,6,8,0) 75%)}
+#scrMain .sub{font-size:18px;color:#c9d1d8;margin:10px 0 22px;max-width:520px}
+/* char select */
+#scrChar{justify-content:flex-end}
+#scrChar .panel{max-width:600px}
+.chars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.ccard{pointer-events:auto;cursor:pointer;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:10px;text-align:center;transition:background .15s}
+.ccard:hover{background:rgba(255,255,255,.09)}
+.ccard.sel{outline:2px solid #e5352b;background:rgba(229,53,43,.12)}
+.ccard .nm{font-weight:800;font-size:14px}.ccard .tg{font-size:11px;color:#aab3bb;margin-top:2px}
+.ccard .sw{width:34px;height:34px;border-radius:50%;margin:0 auto 6px;border:2px solid rgba(255,255,255,.25)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;margin:8px 0}
+.st{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#c3cbd2}
+.pips{display:flex;gap:3px}.pip{width:13px;height:6px;border-radius:2px;background:rgba(255,255,255,.13)}.pip.on{background:#e5352b}
+.abil{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 12px;margin:6px 0;font-size:13px;line-height:1.45}
+.quote{font-style:italic;color:#ffd2cc;border-left:3px solid #e5352b;padding-left:10px;margin:8px 0}
+ul.plain{list-style:none}ul.plain li{padding:3px 0 3px 16px;position:relative;font-size:13px;line-height:1.45}ul.plain li:before{content:'';position:absolute;left:2px;top:10px;width:6px;height:6px;border-radius:50%;background:#e5352b}
+.diffs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.dcard{pointer-events:auto;cursor:pointer;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px}
+.dcard.sel{outline:2px solid #e5352b;background:rgba(229,53,43,.12)}
+.dcard b{font-size:16px}.dcard .muted{font-size:12px}
+.levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin:14px 0}
+.lcard{pointer-events:auto;cursor:pointer;background:rgba(255,255,255,.05);border-radius:10px;padding:10px 12px;border:1px solid rgba(255,255,255,.07)}
+.lcard.lock{opacity:.35;pointer-events:none}
+.lcard .n{font-size:11px;color:#ff8a7f;font-weight:800}.lcard .t{font-weight:700;font-size:14px;margin-top:2px}.lcard .p{font-size:11px;color:#9aa4ae;margin-top:2px}
+.tasks li{font-size:14px}
+.radio{background:#0d1a12;border:1px solid #1f4a2c;color:#9fe3b0;font-family:ui-monospace,Menlo,monospace;font-size:14px;padding:12px 14px;border-radius:10px;margin:10px 0;line-height:1.5}
+.kv{display:grid;grid-template-columns:auto auto;gap:4px 18px;font-size:14px;margin:10px 0}
+.kv span:nth-child(odd){color:#9aa4ae}
+table.ctl{width:100%;border-collapse:collapse;font-size:13px}table.ctl td{padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.06)}table.ctl td:first-child{color:#ffb3ab;font-weight:700;white-space:nowrap}
+.dronegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dronegrid div{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.45}
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10}
+#obj{position:absolute;left:14px;top:12px;max-width:min(360px,46vw);background:rgba(8,10,13,.55);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4}
+#obj .lt{font-family:'Russo One';font-size:15px}
+#obj .seg{font-size:11px;color:#9aa4ae;margin-bottom:4px}
+#obj .t{display:flex;gap:6px}#obj .t.done{color:#7fd492;text-decoration:line-through;opacity:.8}
+#obj .dist{margin-top:6px;font-weight:800;color:#fff}
+#banner{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(200,28,20,.88);color:#fff;font-weight:800;padding:10px 18px;border-radius:10px;font-size:15px;text-align:center;max-width:min(640px,70vw);opacity:0;transition:opacity .3s}
+#banner.on{opacity:1;animation:blink 1s infinite}
+@keyframes blink{50%{background:rgba(120,12,8,.9)}}
+#sub{position:absolute;bottom:150px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:8px 14px;border-radius:8px;font-size:15px;max-width:min(680px,80vw);text-align:center;opacity:0;transition:opacity .3s}
+#sub.on{opacity:1}#sub b{color:#ffb3ab}
+#toast{position:absolute;top:34%;left:50%;transform:translateX(-50%);font-weight:800;font-size:14px;color:#fff;text-shadow:0 2px 6px #000;opacity:0;transition:opacity .25s}
+#toast.on{opacity:1}
+#bars{position:absolute;left:14px;bottom:14px;width:min(270px,40vw)}
+.bar{height:9px;border-radius:5px;background:rgba(255,255,255,.12);margin:5px 0;overflow:hidden;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.blab{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:#d6dce1;text-shadow:0 1px 3px #000}
+#runInd{display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.12);font-size:11px;font-weight:800;margin-top:4px}
+#runInd.on{background:#e5352b}
+#weap{position:absolute;right:14px;bottom:14px;text-align:right;background:rgba(8,10,13,.55);border-radius:12px;padding:10px 14px;min-width:190px}
+#weap .wn{font-weight:800;font-size:14px}#weap .am{font-family:'Russo One';font-size:28px}#weap .am small{font-size:14px;color:#aab3bb}
+#weap .inv{font-size:12px;color:#c3cbd2;margin-top:4px}
+#abil{position:absolute;right:14px;bottom:122px;background:rgba(8,10,13,.55);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700}
+#cross{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px}
+#cross:before,#cross:after{content:'';position:absolute;background:rgba(255,255,255,.85);box-shadow:0 0 2px #000}
+#cross:before{left:12px;top:0;width:2px;height:26px}#cross:after{top:12px;left:0;height:2px;width:26px}
+#cross.aim{transform:scale(.6)}
+#hitm{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid #ff4636;border-radius:50%;opacity:0;transition:opacity .15s}
+#prompt{position:absolute;left:50%;top:62%;transform:translateX(-50%);background:rgba(0,0,0,.65);padding:8px 14px;border-radius:10px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:10px}
+#prompt .ring{width:28px;height:28px;border-radius:50%;background:conic-gradient(#e5352b var(--p,0%),rgba(255,255,255,.15) 0)}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(170,10,0,.75) 100%);opacity:0}
+#dark{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(0,0,0,.5) 100%)}
+#fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:40;transition:opacity .45s}
+#ind,#marks{position:absolute;inset:0;overflow:hidden}
+.ind{position:absolute;width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:22px solid #ff3b2f;filter:drop-shadow(0 0 4px #000);margin:-11px 0 0 -11px}
+.ind.w{border-bottom-color:#ffb02e}
+.mk{position:absolute;transform:translate(-50%,-100%);font-size:11px;font-weight:800;text-align:center;white-space:nowrap;text-shadow:0 1px 3px #000}
+.mk .dot{width:12px;height:12px;border-radius:50%;margin:3px auto 0;border:2px solid #fff}
+.mk.sh{color:#fff}.mk.sh .dot{background:#e5352b}
+.mk.it{color:#9fe3b0}.mk.it .dot{background:#2fa45a}
+.mk.np{color:#ffd27a}.mk.np .dot{background:#e8a81e}
+.mk.dv{color:#8fd0ff}.mk.dv .dot{background:#1f7fd0}
+#detect{position:absolute;left:50%;top:70px;transform:translateX(-50%);width:160px;text-align:center;font-size:11px;font-weight:800;opacity:0;transition:opacity .2s}
+#detect .bar{height:6px}
+#minimapHint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font-size:11px;color:#c3cbd2;background:rgba(0,0,0,.45);padding:4px 10px;border-radius:8px}
+#titleCard{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity 1s}
+#titleCard.on{opacity:1}
+#titleCard h1{font-family:'Russo One';font-size:clamp(46px,9vw,110px);text-shadow:0 6px 30px #000}
+/* ---------- touch (компактно, кнопки появляются по ситуации) ---------- */
+#touch{position:fixed;inset:0;z-index:12;pointer-events:none;--s:1;--a:.5}
+#joyZone{position:absolute;left:0;bottom:0;width:42%;height:72%;pointer-events:auto}
+#joy{position:absolute;width:calc(112px*var(--s));height:calc(112px*var(--s));margin:calc(-56px*var(--s)) 0 0 calc(-56px*var(--s));border-radius:50%;background:rgba(255,255,255,calc(var(--a)*.12));border:2px solid rgba(255,255,255,calc(var(--a)*.35));pointer-events:none;left:calc(90px*var(--s));top:calc(100% - 90px*var(--s));transition:opacity .2s;opacity:.55}
+#joy.act{opacity:1}
+#joy.run{border-color:rgba(229,53,43,.8)}
+#joyK{position:absolute;left:50%;top:50%;width:calc(46px*var(--s));height:calc(46px*var(--s));margin:calc(-23px*var(--s)) 0 0 calc(-23px*var(--s));border-radius:50%;background:rgba(255,255,255,calc(var(--a)*.6))}
+.tb{position:absolute;pointer-events:auto;width:calc(var(--w,48px)*var(--s));height:calc(var(--w,48px)*var(--s));border-radius:50%;background:rgba(20,24,30,calc(var(--a)*.75));border:1.5px solid rgba(255,255,255,calc(var(--a)*.45));color:rgba(255,255,255,calc(.35 + var(--a)));display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1;font:700 calc(19px*var(--s)) Inter,sans-serif}
+.tb small{font-size:calc(7.5px*var(--s));font-weight:800;letter-spacing:.3px;margin-top:2px;opacity:.85}
+.tb.on{background:rgba(229,53,43,calc(.35 + var(--a)*.5));border-color:#ff8a7f}
+.tb.hid{background:rgba(47,164,90,calc(.35 + var(--a)*.5));border-color:#8fe3a8}
+.tb.off{display:none}
+#tJump{--w:60px;right:calc(16px*var(--s));bottom:calc(16px*var(--s))}
+#tCrouch{--w:52px;right:calc(88px*var(--s));bottom:calc(12px*var(--s))}
+#tRun{--w:44px;right:calc(22px*var(--s));bottom:calc(88px*var(--s))}
+#tUse{--w:66px;right:calc(150px*var(--s));bottom:calc(26px*var(--s));font-size:calc(22px*var(--s))}
+#tFire{--w:64px;right:calc(20px*var(--s));bottom:calc(146px*var(--s))}
+#tAim{--w:44px;right:calc(92px*var(--s));bottom:calc(168px*var(--s))}
+#tRel{--w:38px;right:calc(92px*var(--s));bottom:calc(118px*var(--s))}
+#tSw{--w:38px;right:calc(146px*var(--s));bottom:calc(134px*var(--s))}
+#tAbil{--w:40px;right:calc(10px*var(--s));top:calc(60px*var(--s))}
+#tMed{--w:40px;right:calc(10px*var(--s));top:calc(106px*var(--s))}
+#tPause{--w:38px;right:calc(10px*var(--s));top:calc(12px*var(--s));font-size:calc(14px*var(--s))}
+/* ---------- кат-сцены ---------- */
+#cine{position:fixed;inset:0;z-index:25;pointer-events:auto}
+#cine .lb{position:absolute;left:0;right:0;height:11vh;background:#000}
+#cine .lb.top{top:0}#cine .lb.bot{bottom:0}
+#cineSub{position:absolute;left:50%;bottom:calc(11vh + 14px);transform:translateX(-50%);width:min(760px,88vw);background:rgba(0,0,0,.62);border-radius:12px;padding:12px 16px;opacity:0;transition:opacity .3s}
+#cineSub.on{opacity:1}
+#cineWho{font-weight:800;color:#ffb3ab;font-size:13px;letter-spacing:.4px;margin-bottom:3px}
+#cineTxt{font-size:clamp(14px,2.1vw,18px);line-height:1.45;min-height:1.4em}
+#cineSkip{position:absolute;right:14px;top:calc(11vh + 10px);background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:8px 14px;font:700 13px Inter,sans-serif}
+#cineHint{position:absolute;left:14px;top:calc(11vh + 14px);font-size:11px;color:#c3cbd2;opacity:.7}
+#cineTitle{position:absolute;left:0;right:0;top:34%;text-align:center;font-family:'Russo One',Inter,sans-serif;font-size:clamp(34px,7vw,84px);text-shadow:0 6px 30px #000;opacity:0;transition:opacity 1s;pointer-events:none}
+#cineTitle small{display:block;font-size:clamp(12px,1.6vw,16px);letter-spacing:4px;color:#ffb3ab;font-family:Inter,sans-serif;font-weight:800;margin-bottom:6px}
+#cineTitle.on{opacity:1}
+/* ---------- записки / скрытность ---------- */
+#notePop{position:absolute;right:14px;top:50%;transform:translate(120%,-50%);width:min(330px,70vw);background:#f4eedc;color:#2a2620;border-radius:6px;padding:14px 16px;font-size:13px;line-height:1.45;box-shadow:0 10px 40px rgba(0,0,0,.6);transition:transform .45s;font-family:Georgia,serif}
+#notePop.on{transform:translate(0,-50%)}
+#notePop .nt{font-weight:700;margin-bottom:6px;font-family:Inter,sans-serif;font-size:12px;color:#7a3a20;text-transform:uppercase;letter-spacing:.4px}
+#notePop .nc{margin-top:8px;font-size:11px;color:#7a6a5a;font-family:Inter,sans-serif}
+.mk.hd{color:#9fe3b0}.mk.hd .dot{background:transparent;border-color:#8fe3a8;width:10px;height:10px}
+#hideInd{position:absolute;left:50%;top:96px;transform:translateX(-50%);background:rgba(47,164,90,.85);color:#fff;font-weight:800;font-size:12px;padding:4px 12px;border-radius:12px;opacity:0;transition:opacity .2s}
+#hideInd.on{opacity:1}
+@media (max-width:760px){
+ .chars{grid-template-columns:repeat(2,1fr)}
+ .diffs{grid-template-columns:1fr}
+ #scrChar{justify-content:center}
+ .screen.clear{background:rgba(5,6,8,.8)}
+ #obj{font-size:11px;max-width:52vw}
+ #weap{min-width:130px;padding:6px 10px;bottom:auto;top:12px;right:64px}#weap .am{font-size:20px}
+ #abil{top:100px;bottom:auto;right:64px}
+ #bars{bottom:auto;top:auto;left:50%;transform:translateX(-50%);bottom:6px;width:46vw}
+ .dronegrid{grid-template-columns:1fr}
+}
+body.touch #obj{font-size:10.5px;max-width:38vw;padding:6px 8px;top:6px;left:6px;pointer-events:auto;background:rgba(8,10,13,.42)}
+body.touch #obj.col .t,body.touch #obj.col .seg{display:none}
+body.touch #obj.col::after{content:'▾ задачи';font-size:9px;color:#9aa4ae}
+body.touch #obj .lt{font-size:13px}
+body.touch #bars{left:50%;transform:translateX(-50%);top:6px;bottom:auto;width:min(230px,30vw)}
+body.touch .bar{height:6px;margin:3px 0}
+body.touch #banner{top:96px;font-size:13px;padding:7px 12px}
+body.touch #detect{top:84px}
+body.touch #weap{top:8px;right:58px;bottom:auto;min-width:0;padding:4px 9px;background:rgba(8,10,13,.4)}
+body.touch #weap .am{font-size:18px}body.touch #weap .wn{font-size:12px}
+body.touch #abil{display:none}
+body.touch #sub{bottom:auto;top:36%;font-size:12px;max-width:60vw}
+body.touch #notePop{top:42%}
+body.touch #weap .inv{display:none}
+body.touch #runInd{display:none}
+body.touch #hideInd{top:auto;bottom:86px;font-size:11px}
+body.touch #prompt{top:auto;bottom:110px;font-size:12px;padding:6px 10px}
+body.touch #toast{top:24%}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="dark"></div>
+  <div id="vig"></div>
+  <div id="marks"></div>
+  <div id="ind"></div>
+  <div id="obj"></div>
+  <div id="banner"></div>
+  <div id="detect"><div>👁 НАБЛЮДАЮТ</div><div class="bar"><i id="detBar" style="background:#ffb02e;width:0"></i></div></div>
+  <div id="toast"></div>
+  <div id="hideInd">👁‍🗨 ВЫ ЗАТАИЛИСЬ — разведчик вас не видит</div>
+  <div id="notePop"></div>
+  <div id="sub"></div>
+  <div id="cross"></div><div id="hitm"></div>
+  <div id="prompt" class="hidden"><div class="ring" id="pRing"></div><div id="pText"></div></div>
+  <div id="bars">
+    <div class="blab"><span>Здоровье</span><span id="hpT">100</span></div><div class="bar"><i id="hpBar" style="background:#e5352b;width:100%"></i></div>
+    <div class="blab"><span>Выносливость</span><span id="stT"></span></div><div class="bar"><i id="stBar" style="background:#e6d05a;width:100%"></i></div>
+    <div class="blab"><span>Паника</span><span></span></div><div class="bar" style="height:5px"><i id="pnBar" style="background:#9b6cff;width:0"></i></div>
+    <span id="runInd">БЕГ: Shift</span>
+  </div>
+  <div id="abil"></div>
+  <div id="weap"><div class="wn" id="wName"></div><div class="am" id="wAmmo"></div><div class="inv" id="wInv"></div></div>
+  <div id="titleCard"><h1>Ну и сходил…</h1></div>
+</div>
+
+<div id="touch" class="hidden">
+  <div id="joyZone"></div>
+  <div id="joy"><div id="joyK"></div></div>
+  <div class="tb" id="tJump">⤒<small>ПРЫЖОК</small></div>
+  <div class="tb" id="tCrouch">⤓<small>ПРИСЕСТЬ</small></div>
+  <div class="tb" id="tRun">»<small>БЕГ</small></div>
+  <div class="tb off" id="tUse">✋<small>ДЕЙСТВИЕ</small></div>
+  <div class="tb off" id="tFire">✹<small>ОГОНЬ</small></div>
+  <div class="tb off" id="tAim">◎<small>ПРИЦЕЛ</small></div>
+  <div class="tb off" id="tRel">↻<small>ПАТР.</small></div>
+  <div class="tb off" id="tSw">⇄<small>ОРУЖ.</small></div>
+  <div class="tb" id="tAbil">★<small>УМЕН.</small></div>
+  <div class="tb" id="tMed">✚<small>АПТ.</small></div>
+  <div class="tb" id="tPause">❚❚</div>
+</div>
+
+<div id="cine" class="hidden">
+  <div class="lb top"></div><div class="lb bot"></div>
+  <div id="cineTitle"></div>
+  <div id="cineHint">Нажмите на экран — следующий кадр</div>
+  <button id="cineSkip">Пропустить ▸▸</button>
+  <div id="cineSub"><div id="cineWho"></div><div id="cineTxt"></div></div>
+</div>
+
+<div id="fade"></div>
+
+<div id="scrLoading" class="screen"><div class="panel narrow" style="text-align:center"><h2>Загрузка…</h2><p class="muted" id="loadMsg">Готовим улицы и укрытия</p></div></div>
+
+<div id="scrMain" class="screen hidden">
+  <div class="menuWrap">
+    <span class="tag">Сюжетный стелс-экшен на выживание</span>
+    <h1 class="title">Ну и сходил<span class="red">…</span></h1>
+    <div class="sub">Вышел на пять минут — а дойти пришлось до центрального убежища. Прячьтесь от луча разведчика, выручайте соседей, ищите записки и слушайте «Ласточку» по рации.</div>
+    <button class="btn big" id="bNew">Новая игра</button>
+    <button class="btn ghost" id="bCont">Продолжить</button>
+    <button class="btn ghost" id="bLevels">Выбор уровня</button>
+    <button class="btn ghost" id="bHelp">Управление и справочник БПЛА</button>
+    <div class="row" style="width:100%">
+      <button class="btn ghost" id="bSound" style="flex:1">Звук: вкл</button>
+      <button class="btn ghost" id="bQual" style="flex:1">Графика: высокая</button>
+    </div>
+    <p class="muted small" style="margin-top:8px">Сохранение прогресса — в этом браузере.</p>
+  </div>
+</div>
+
+<div id="scrChar" class="screen clear hidden">
+  <div class="panel">
+    <h2>Кто выходит из дома?</h2>
+    <div class="chars" id="charCards"></div>
+    <div id="charInfo"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn ghost" id="bCharBack">Назад</button>
+      <button class="btn big" id="bCharOk">Выбрать</button>
+    </div>
+  </div>
+</div>
+
+<div id="scrDiff" class="screen hidden">
+  <div class="panel">
+    <h2>Уровень сложности</h2>
+    <p class="muted">Сложность меняет урон, число беспилотников, время предупреждений, количество припасов и отдых в укрытиях. Её можно поменять перед любым уровнем.</p>
+    <div class="diffs" id="diffCards"></div>
+    <div class="row"><button class="btn ghost" id="bDiffBack">Назад</button><button class="btn big" id="bDiffOk">Дальше</button></div>
+  </div>
+</div>
+
+<div id="scrLevels" class="screen hidden">
+  <div class="panel">
+    <h2>Выбор уровня</h2>
+    <p class="muted">Открытые уровни. Персонажа и сложность выберете на следующем шаге.</p>
+    <div class="levels" id="levelCards"></div>
+    <div class="row"><button class="btn ghost" id="bLvBack">Назад</button></div>
+  </div>
+</div>
+
+<div id="scrBrief" class="screen hidden">
+  <div class="panel narrow">
+    <div class="tag" id="brNum"></div>
+    <h2 id="brTitle"></h2>
+    <div class="muted" id="brPlace"></div>
+    <p id="brText"></p>
+    <h3>Задачи</h3>
+    <ul class="plain tasks" id="brTasks"></ul>
+    <h3>Угрозы</h3>
+    <p class="small muted" id="brThreat"></p>
+    <div class="row" style="margin-top:14px">
+      <button class="btn ghost" id="bBrChar">Сменить героя</button>
+      <button class="btn ghost" id="bBrDiff">Сложность</button>
+      <button class="btn big" id="bBrGo">Начать</button>
+    </div>
+  </div>
+</div>
+
+<div id="scrShelter" class="screen hidden">
+  <div class="panel narrow">
+    <div class="tag">Передышка</div>
+    <h2 id="shTitle">Укрытие</h2>
+    <div class="radio" id="shRadio"></div>
+    <p class="quote" id="shLine"></p>
+    <div class="kv" id="shKv"></div>
+    <p class="small muted">Укрытие — не конец уровня. Отдышитесь, проверьте снаряжение — и бегом к следующему.</p>
+    <div class="row" style="margin-top:10px"><button class="btn big" id="bShGo">Выйти и бежать дальше</button></div>
+  </div>
+</div>
+
+<div id="scrPause" class="screen hidden">
+  <div class="panel narrow">
+    <h2>Пауза</h2>
+    <div id="pauseObj" class="small"></div>
+    <div class="menuWrap" style="margin-top:12px">
+      <button class="btn" id="bResume">Продолжить</button>
+      <button class="btn ghost" id="bRestartSeg">Начать с последнего укрытия</button>
+      <button class="btn ghost" id="bPauseHelp">Управление</button>
+      <button class="btn ghost" id="bPauseSound">Звук</button>
+      <button class="btn ghost" id="bToMenu">В главное меню</button>
+    </div>
+  </div>
+</div>
+
+<div id="scrDead" class="screen hidden">
+  <div class="panel narrow" style="text-align:center">
+    <h2>Не успели укрыться</h2>
+    <p class="muted" id="deadText">Попробуйте ещё раз — с последнего укрытия.</p>
+    <p class="small muted" id="deadTip"></p>
+    <div class="row" style="justify-content:center;margin-top:10px"><button class="btn ghost" id="bDeadMenu">В меню</button><button class="btn big" id="bDeadRetry">Ещё раз</button></div>
+  </div>
+</div>
+
+<div id="scrDone" class="screen hidden">
+  <div class="panel narrow">
+    <div class="tag" id="dnNum"></div>
+    <h2 id="dnTitle">Уровень пройден</h2>
+    <div class="kv" id="dnKv"></div>
+    <p class="quote" id="dnLine"></p>
+    <div class="row" style="margin-top:10px"><button class="btn ghost" id="bDnMenu">В меню</button><button class="btn ghost" id="bDnChar">Сменить героя</button><button class="btn big" id="bDnNext">Следующий уровень</button></div>
+  </div>
+</div>
+
+<div id="scrEnd" class="screen hidden">
+  <div class="panel narrow" style="text-align:center">
+    <h1 class="title" style="font-size:clamp(38px,7vw,70px)">Ну и сходил<span class="red">…</span></h1>
+    <h2 style="margin-top:8px">Главное — дошли.</h2>
+    <p class="quote" id="endLine" style="text-align:left"></p>
+    <div class="kv" id="endKv" style="justify-content:center"></div>
+    <div class="row" style="justify-content:center;margin-top:10px"><button class="btn big" id="bEndMenu">В главное меню</button></div>
+  </div>
+</div>
+
+<div id="scrHelp" class="screen hidden">
+  <div class="panel">
+    <h2>Управление</h2>
+    <table class="ctl">
+      <tr><td>W A S D / стрелки</td><td>Движение</td></tr>
+      <tr><td>Shift (удерживать)</td><td><b>Бег</b> — тратит выносливость. На телефоне — толкните джойстик до упора или кнопка »</td></tr><tr><td>Телефон</td><td>Джойстик появляется там, где коснулись левой половины экрана; правая половина — камера. Кнопки стрельбы видны только с оружием, «Действие» — только рядом с объектом. Размер и прозрачность — в паузе.</td></tr>
+      <tr><td>Мышь</td><td>Камера (кликните по игре, чтобы захватить курсор)</td></tr>
+      <tr><td>ЛКМ / ПКМ</td><td>Огонь / прицеливание</td></tr>
+      <tr><td>Пробел</td><td>Прыжок, перелезть через низкое препятствие</td></tr>
+      <tr><td>C или Ctrl</td><td>Присесть. На бегу — подкат</td></tr>
+      <tr><td>E (удерживать)</td><td>Действие: открыть, помочь, включить</td></tr>
+      <tr><td>Q</td><td>Особое умение героя</td></tr>
+      <tr><td>F</td><td>Аптечка</td></tr>
+      <tr><td>R / 1 2 3 / колесо</td><td>Перезарядка / выбор оружия</td></tr>
+      <tr><td>Esc</td><td>Пауза</td></tr>
+    </table>
+    <h3>Как выживать</h3>
+    <ul class="plain">
+      <li>Укрытие — контрольная точка и передышка, но не конец уровня: после отдыха нужно бежать к следующему.</li>
+      <li><b>Сначала всегда пролетает разведчик.</b> Его «глаз» — зелёный луч на земле. Попали в луч — растёт шкала «НАБЛЮДАЮТ».</li><li>Присядьте в укромном месте (ниша под козырьком 👁, остановка, кусты, прилавок) — вы <b>затаились</b>: разведчик не видит, FPV теряет цель.</li><li>Ударные дроны прилетают только по наводке разведчика. Не засекли — не прилетят.</li>
+      <li>Писк и красный луч — FPV взял цель. Резко смените направление, сделайте подкат или спрячьтесь за препятствием.</li>
+      <li>Красный круг на земле — сюда идёт удар. Уходите из круга до конца отсчёта.</li>
+      <li>Сбитые дроны падают и могут врезаться в здания. Не стойте под ними.</li>
+    </ul>
+    <h3>Справочник БПЛА</h3>
+    <div class="dronegrid" id="droneCodex"></div>
+    <div class="row" style="margin-top:12px"><button class="btn" id="bHelpBack">Понятно</button></div>
+  </div>
+</div>

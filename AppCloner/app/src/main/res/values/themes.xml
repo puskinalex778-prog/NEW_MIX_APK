@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AppCloner" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/bg</item>
+    </style>
+    <color name="bg">#FF0F1020</color>
+    <color name="ic_bg_start">#FF6C4DFF</color>
+    <color name="ic_bg_end">#FF00C2FF</color>
+</resources>

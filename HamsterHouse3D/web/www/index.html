@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Хомячий домик 3D</title>
+<style>
+  :root{
+    --cream:#fff8ee; --card:#fffaf3; --ink:#4a3426; --muted:#9b8270;
+    --orange:#ff9f43; --orange2:#ee7f1d; --pink:#ff7aa2; --blue:#4fb3ff; --green:#5ccf7b;
+    --shadow:0 6px 18px rgba(80,45,20,.25);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  html,body{margin:0;height:100%;overflow:hidden;background:#f3dfc6;font-family:"Nunito","Segoe UI",Roboto,system-ui,sans-serif;color:var(--ink)}
+  #scene{position:fixed;inset:0;touch-action:none}
+  #scene canvas{display:block}
+  #labels{position:fixed;inset:0;pointer-events:none}
+  .hlabel{pointer-events:none;font-weight:800;font-size:13px;color:#fff;background:rgba(74,52,38,.72);padding:2px 8px;border-radius:12px;white-space:nowrap;transform:translateY(-6px);text-shadow:0 1px 2px rgba(0,0,0,.3)}
+  .hlabel.sel{background:var(--orange2)}
+  .hlabel .g-m{color:#9ad4ff}.hlabel .g-f{color:#ffb3cb}
+  .houselabel{pointer-events:none;font-size:14px;font-weight:800;background:rgba(255,255,255,.85);padding:2px 8px;border-radius:12px}
+
+  /* top bar */
+  #top{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 10px 8px;pointer-events:none}
+  #title{pointer-events:auto;background:var(--card);border-radius:18px;padding:6px 12px;box-shadow:var(--shadow);font-weight:900;font-size:15px;display:flex;flex-direction:column;line-height:1.15}
+  #clock{font-size:12px;font-weight:700;color:var(--muted)}
+  #top .sp{flex:1}
+  .rbtn{pointer-events:auto;border:none;background:var(--card);border-radius:16px;min-width:46px;height:46px;font-size:20px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;gap:4px;font-weight:800;color:var(--ink);padding:0 10px}
+  .rbtn:active{transform:scale(.94)}
+  #speedBadge{font-size:13px}
+
+  /* bottom actions */
+  #actions{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom) + 10px);pointer-events:none;flex-wrap:nowrap}
+  .act{pointer-events:auto;position:relative;overflow:hidden;border:none;background:var(--card);border-radius:20px;width:68px;height:68px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:26px;color:var(--ink);padding:0}
+  .act small{font-size:11px;font-weight:800;margin-top:1px;position:relative;z-index:1}
+  .act span{position:relative;z-index:1}
+  .act .lvl{position:absolute;left:0;right:0;bottom:0;height:0;opacity:.35;transition:height .4s}
+  .act.food .lvl{background:#f6b54b}.act.water .lvl{background:#4fb3ff}
+  .act.on{outline:3px solid var(--orange);}
+  .act:active{transform:scale(.93)}
+  .act.warn{animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{box-shadow:var(--shadow)}50%{box-shadow:0 0 0 5px rgba(255,90,90,.55)}}
+
+  /* hamster panel */
+  #panel{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 92px);transform:translate(-50%,140%);width:min(440px,94vw);background:var(--card);border-radius:24px;box-shadow:0 10px 30px rgba(80,45,20,.35);padding:12px 14px 12px;transition:transform .28s cubic-bezier(.2,.9,.3,1.2)}
+  #panel.open{transform:translate(-50%,0)}
+  #pHead{display:flex;align-items:center;gap:10px}
+  #pAvatar{width:44px;height:44px;border-radius:50%;flex:none;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+  #pName{font-size:20px;font-weight:900;line-height:1.1}
+  #pSub{font-size:12px;color:var(--muted);font-weight:700}
+  #pHead .sp{flex:1}
+  .ibtn{border:none;background:#f3e6d6;border-radius:12px;width:38px;height:38px;font-size:18px;color:var(--ink)}
+  .ibtn:active{transform:scale(.92)}
+  #pStatus{margin:8px 0 6px;font-size:13px;font-weight:700;background:#fdf0df;border-radius:12px;padding:5px 10px}
+  .bars{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px}
+  .bar{font-size:11px;font-weight:800;color:var(--muted)}
+  .bar .t{display:flex;justify-content:space-between}
+  .bar .b{height:8px;background:#efe2d2;border-radius:6px;overflow:hidden;margin-top:2px}
+  .bar .b i{display:block;height:100%;border-radius:6px;transition:width .3s}
+  #pBtns{display:flex;gap:8px;margin-top:10px}
+  .pbtn{flex:1;border:none;border-radius:14px;padding:10px 4px;font-weight:900;font-size:14px;color:#fff;background:var(--orange);box-shadow:0 3px 0 var(--orange2)}
+  .pbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--orange2)}
+  .pbtn.pink{background:var(--pink);box-shadow:0 3px 0 #e2557f}
+  .pbtn.blue{background:var(--blue);box-shadow:0 3px 0 #2b8fd8}
+  .pbtn.gray{background:#b9a492;box-shadow:0 3px 0 #9c8574}
+
+  /* modals */
+  .modal{position:fixed;inset:0;background:rgba(60,35,20,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+  .modal.open{display:flex}
+  .box{background:var(--card);border-radius:24px;box-shadow:0 14px 40px rgba(0,0,0,.35);width:min(460px,100%);max-height:88vh;overflow:auto;padding:18px}
+  .box h2{margin:0 0 10px;font-size:22px;font-weight:900}
+  .box p{margin:6px 0;font-size:14px;line-height:1.4}
+  .row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed #ead8c3}
+  .row:last-child{border-bottom:none}
+  .row .txt{flex:1}
+  .row .txt b{display:block;font-size:15px}
+  .row .txt small{color:var(--muted);font-size:12px;font-weight:600;line-height:1.3;display:block}
+  .tgl{position:relative;width:54px;height:30px;flex:none;border-radius:20px;background:#d9c7b3;border:none;transition:background .2s}
+  .tgl::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s}
+  .tgl.on{background:var(--green)}.tgl.on::after{left:27px}
+  .seg{display:flex;background:#efe2d2;border-radius:14px;padding:3px;gap:3px;flex-wrap:wrap}
+  .seg button{flex:1;border:none;background:transparent;border-radius:11px;padding:7px 8px;font-weight:800;font-size:13px;color:var(--ink)}
+  .seg button.on{background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.15)}
+  input[type=text]{width:100%;font-size:18px;font-weight:800;padding:12px 14px;border-radius:14px;border:2px solid #ead8c3;background:#fff;color:var(--ink);outline:none;user-select:text;-webkit-user-select:text}
+  input[type=text]:focus{border-color:var(--orange)}
+  .btns{display:flex;gap:10px;margin-top:14px}
+  .swatches{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .sw{width:46px;height:46px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+  .sw.on{outline:3px solid var(--orange)}
+  .lbl{font-size:13px;font-weight:800;color:var(--muted);margin:12px 0 4px}
+  .hlist .row{cursor:pointer}
+  .dot{width:36px;height:36px;border-radius:50%;flex:none;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+  .mem{font-size:13px;color:var(--muted)}
+
+  #toasts{position:fixed;top:calc(env(safe-area-inset-top) + 70px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;z-index:30;width:92vw}
+  .toast{background:rgba(74,52,38,.92);color:#fff;font-weight:800;font-size:14px;padding:9px 14px;border-radius:16px;box-shadow:var(--shadow);text-align:center;animation:tin .3s ease-out;max-width:100%}
+  @keyframes tin{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+  #hint{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 92px);left:50%;transform:translateX(-50%);background:var(--orange);color:#fff;font-weight:900;padding:8px 14px;border-radius:14px;display:none;box-shadow:var(--shadow);z-index:5;white-space:nowrap}
+  #loading{position:fixed;inset:0;background:#f3dfc6;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:60px;z-index:50;transition:opacity .5s}
+  #loading div{font-size:18px;font-weight:900;margin-top:8px}
+  @media (max-height:520px){ .act{width:58px;height:58px;font-size:22px} #panel{bottom:calc(env(safe-area-inset-bottom) + 76px)} }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+<div id="labels"></div>
+
+<div id="top">
+  <div id="title">🐹 Хомячий домик<span id="clock">День 1 · 08:00</span></div>
+  <div class="sp"></div>
+  <button class="rbtn" id="btnSpeed"><span id="speedBadge">▶ ×1</span></button>
+  <button class="rbtn" id="btnList">🐹 <span id="count">0</span></button>
+  <button class="rbtn" id="btnSettings">⚙️</button>
+</div>
+
+<div id="actions">
+  <button class="act food" id="actFood"><div class="lvl"></div><span>🌻</span><small>Корм</small></button>
+  <button class="act water" id="actWater"><div class="lvl"></div><span>💧</span><small>Вода</small></button>
+  <button class="act" id="actTreat"><span>🥕</span><small>Вкусняшка</small></button>
+  <button class="act" id="actClean"><span>🧹</span><small>Уборка</small></button>
+  <button class="act" id="actAdd"><span>➕</span><small>Хомяк</small></button>
+</div>
+
+<div id="hint">Нажми на опилки, чтобы положить вкусняшку</div>
+
+<div id="panel">
+  <div id="pHead">
+    <div id="pAvatar"></div>
+    <div><div id="pName">Имя</div><div id="pSub">мальчик · 3 дня</div></div>
+    <div class="sp"></div>
+    <button class="ibtn" id="pRename" title="Имя">✏️</button>
+    <button class="ibtn" id="pClose">✖</button>
+  </div>
+  <div id="pStatus">Гуляет</div>
+  <div class="bars">
+    <div class="bar"><div class="t"><span>🌻 Сытость</span><span id="vHunger"></span></div><div class="b"><i id="bHunger" style="background:#f6b54b"></i></div></div>
+    <div class="bar"><div class="t"><span>💧 Вода</span><span id="vThirst"></span></div><div class="b"><i id="bThirst" style="background:#4fb3ff"></i></div></div>
+    <div class="bar"><div class="t"><span>⚡ Бодрость</span><span id="vEnergy"></span></div><div class="b"><i id="bEnergy" style="background:#a98bff"></i></div></div>
+    <div class="bar"><div class="t"><span>💗 Радость</span><span id="vHappy"></span></div><div class="b"><i id="bHappy" style="background:#ff7aa2"></i></div></div>
+    <div class="bar" style="grid-column:1/3"><div class="t"><span>🩺 Здоровье</span><span id="vHealth"></span></div><div class="b"><i id="bHealth" style="background:#5ccf7b"></i></div></div>
+  </div>
+  <div id="pBtns">
+    <button class="pbtn pink" id="pPet">🤚 Погладить</button>
+    <button class="pbtn" id="pFeed">🥕 Угостить</button>
+    <button class="pbtn blue" id="pFollow">🎥 Следить</button>
+  </div>
+</div>
+
+<!-- rename -->
+<div class="modal" id="mRename"><div class="box">
+  <h2>✏️ Имя хомячка</h2>
+  <input type="text" id="renameInput" maxlength="16" placeholder="Например, Пушок">
+  <div class="lbl">Идеи:</div><div class="seg" id="renameIdeas"></div>
+  <div class="btns"><button class="pbtn gray" data-close>Отмена</button><button class="pbtn" id="renameOk">Сохранить</button></div>
+</div></div>
+
+<!-- add -->
+<div class="modal" id="mAdd"><div class="box">
+  <h2>➕ Новый хомячок</h2>
+  <input type="text" id="addName" maxlength="16" placeholder="Имя">
+  <div class="lbl">Кто это?</div>
+  <div class="seg" id="addGender"><button data-g="m" class="on">👦 Мальчик</button><button data-g="f">👧 Девочка</button></div>
+  <div class="lbl">Окрас</div>
+  <div class="swatches" id="addColors"></div>
+  <div class="lbl" id="addColorName"></div>
+  <div class="btns"><button class="pbtn gray" data-close>Отмена</button><button class="pbtn" id="addOk">Завести!</button></div>
+</div></div>
+
+<!-- list -->
+<div class="modal" id="mList"><div class="box">
+  <h2>🐹 Мои хомячки</h2>
+  <div class="hlist" id="hList"></div>
+  <div class="btns"><button class="pbtn gray" data-close>Закрыть</button></div>
+</div></div>
+
+<!-- settings -->
+<div class="modal" id="mSettings"><div class="box">
+  <h2>⚙️ Настройки</h2>
+  <div class="row"><div class="txt"><b>💕 Беременность и малыши</b><small>Мальчик и девочка могут подружиться, и тогда через день появятся малыши.</small></div><button class="tgl" data-set="breeding"></button></div>
+  <div class="row"><div class="txt"><b>🌈 Старость и уход из жизни</b><small>Хомячки стареют и однажды уходят на Радужный мост. Если не кормить и не поить — могут заболеть и уйти раньше. Выключено — живут вечно.</small></div><button class="tgl" data-set="lifecycle"></button></div>
+  <div class="row" style="display:block"><div class="txt"><b>⏳ Сколько живут хомячки</b><small>Время указано при скорости ×1.</small></div>
+    <div class="seg" id="segLife" style="margin-top:6px"><button data-v="short">≈1,5 часа</button><button data-v="normal">≈4 часа</button><button data-v="long">≈12 часов</button></div></div>
+  <div class="row" style="display:block"><div class="txt"><b>⏩ Скорость времени</b><small>1 игровой день = 8 минут при ×1.</small></div>
+    <div class="seg" id="segSpeed" style="margin-top:6px"><button data-v="1">×1</button><button data-v="2">×2</button><button data-v="5">×5</button><button data-v="10">×10</button></div></div>
+  <div class="row"><div class="txt"><b>🌙 День и ночь</b><small>Хомячки ночные зверьки: днём больше спят, ночью бегают в колесе.</small></div><button class="tgl" data-set="daynight"></button></div>
+  <div class="row"><div class="txt"><b>🏷️ Имена над хомячками</b></div><button class="tgl" data-set="labels"></button></div>
+  <div class="row"><div class="txt"><b>🔊 Звуки</b></div><button class="tgl" data-set="sound"></button></div>
+  <div class="row" style="display:block"><div class="txt"><b>🌈 Радужный мост</b><small>Хомячки, которые прожили свою жизнь.</small></div><div id="memList" class="mem" style="margin-top:6px"></div></div>
+  <div class="btns"><button class="pbtn gray" id="btnReset">🔄 Начать заново</button><button class="pbtn" data-close>Готово</button></div>
+</div></div>
+
+<!-- confirm / info -->
+<div class="modal" id="mConfirm"><div class="box">
+  <h2 id="cTitle">Точно?</h2><p id="cText"></p>
+  <div class="btns"><button class="pbtn gray" data-close id="cNo">Нет</button><button class="pbtn" id="cYes">Да</button></div>
+</div></div>
+
+<div class="modal" id="mWelcome"><div class="box">
+  <h2>🐹 Привет!</h2>
+  <p>Это домик твоих хомячков. Они живут сами: гуляют, едят, пьют, спят в домике и бегают в колесе.</p>
+  <p>👆 <b>Нажми на хомячка</b> — увидишь, как он себя чувствует, и сможешь дать ему имя.</p>
+  <p>🤚 <b>Проведи пальцем по хомячку</b> — погладишь его.</p>
+  <p>🌻 💧 Следи, чтобы в мисочке был корм, а в поилке — вода.</p>
+  <p>🔄 Одним пальцем крути домик, двумя — приближай.</p>
+  <p>⚙️ В настройках можно включить малышей и старость.</p>
+  <div class="btns"><button class="pbtn" data-close>Играть!</button></div>
+</div></div>
+
+<div id="toasts"></div>
+<div id="loading">🐹<div>Хомячки просыпаются…</div></div>
+<script src="game.js"></script>
+</body>
+</html>

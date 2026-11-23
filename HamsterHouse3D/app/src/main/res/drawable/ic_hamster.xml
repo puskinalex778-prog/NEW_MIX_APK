@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- уши -->
+    <path android:fillColor="#D98A3D" android:pathData="M30,40 a10,10 0 1,1 20,-6 a10,10 0 1,1 -20,6z"/>
+    <path android:fillColor="#D98A3D" android:pathData="M58,34 a10,10 0 1,1 20,6 a10,10 0 1,1 -20,-6z"/>
+    <path android:fillColor="#F2B0A5" android:pathData="M34,39 a6,6 0 1,1 12,-4 a6,6 0 1,1 -12,4z"/>
+    <path android:fillColor="#F2B0A5" android:pathData="M62,35 a6,6 0 1,1 12,4 a6,6 0 1,1 -12,-4z"/>
+    <!-- голова -->
+    <path android:fillColor="#D98A3D" android:pathData="M54,32 C76,32 84,48 84,60 C84,76 70,84 54,84 C38,84 24,76 24,60 C24,48 32,32 54,32z"/>
+    <!-- мордочка и щёчки -->
+    <path android:fillColor="#FBEFE2" android:pathData="M54,56 C68,56 80,64 80,72 C80,80 68,84 54,84 C40,84 28,80 28,72 C28,64 40,56 54,56z"/>
+    <!-- глаза -->
+    <path android:fillColor="#1A120E" android:pathData="M40,54 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0z"/>
+    <path android:fillColor="#1A120E" android:pathData="M58,54 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M44,52 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M62,52 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0z"/>
+    <!-- нос -->
+    <path android:fillColor="#E9808F" android:pathData="M50,63 L58,63 L54,68z"/>
+    <!-- румянец -->
+    <path android:fillColor="#FFB3B3" android:pathData="M32,68 a5,3.5 0 1,0 10,0 a5,3.5 0 1,0 -10,0z"/>
+    <path android:fillColor="#FFB3B3" android:pathData="M66,68 a5,3.5 0 1,0 10,0 a5,3.5 0 1,0 -10,0z"/>
+</vector>

@@ -1,0 +1,11 @@
+{
+  "appId": "com.oblachko.runner",
+  "appName": "Облачко: Большой забег",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#f6ead2",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}

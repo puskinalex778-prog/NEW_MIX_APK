@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Тема активности (основной UI рисуется Jetpack Compose) -->
+    <style name="Theme.Khranitoniks" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#FF3949AB</item>
+        <item name="android:navigationBarColor">#FFFFFFFF</item>
+        <item name="android:windowBackground">#FFF5F6FB</item>
+    </style>
+
+    <!-- Кнопка цифровой клавиатуры оверлея -->
+    <style name="OverlayKey">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">64dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_margin">4dp</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+</resources>

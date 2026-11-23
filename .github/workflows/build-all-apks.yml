@@ -1,0 +1,271 @@
+name: Build All APKs
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-appcloner:
+    name: App Cloner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release APK
+        working-directory: AppCloner
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk dist/AppCloner.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AppCloner-apk
+          path: AppCloner/dist/AppCloner.apk
+
+  build-hamsterhouse3d:
+    name: HamsterHouse3D
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build debug APK
+        working-directory: HamsterHouse3D
+        run: |
+          gradle assembleDebug --no-daemon --stacktrace
+          mkdir -p out_apks
+          cp app/build/outputs/apk/debug/app-debug.apk out_apks/HamsterHouse3D-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HamsterHouse3D-apk
+          path: HamsterHouse3D/out_apks/*.apk
+
+  build-khranitoniks:
+    name: Хранитоникс + Бокс (v1.2)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build debug APKs
+        working-directory: Khranitoniks_v1.2
+        run: |
+          gradle assembleDebug --stacktrace
+          mkdir -p out_apks
+          cp app/build/outputs/apk/debug/app-debug.apk out_apks/Khranitoniks-v1.2-app-debug.apk
+          cp box/build/outputs/apk/debug/box-debug.apk out_apks/Khranitoniks-v1.2-box-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Khranitoniks-v1.2-app-debug-apk
+          path: Khranitoniks_v1.2/out_apks/Khranitoniks-v1.2-app-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Khranitoniks-v1.2-box-debug-apk
+          path: Khranitoniks_v1.2/out_apks/Khranitoniks-v1.2-box-debug.apk
+
+  build-nu-i-shodil:
+    name: Ну и сходил
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Rebuild game HTML
+        working-directory: nu-i-shodil
+        run: python3 game-src/build/build.py app/src/main/assets/www/index.html
+
+      - name: Build debug APK
+        working-directory: nu-i-shodil
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+        run: |
+          gradle assembleDebug --no-daemon --stacktrace
+          mkdir -p out_apks
+          cp app/build/outputs/apk/debug/app-debug.apk out_apks/NuISxodil-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nu-i-shodil-apk
+          path: nu-i-shodil/out_apks/*.apk
+
+  build-oblachko-runner:
+    name: Облачко Большой забег (v1.1.1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: oblachko_runner_v1_1_1/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install dependencies
+        working-directory: oblachko_runner_v1_1_1
+        run: npm ci
+
+      - name: Build game and sync Android project
+        working-directory: oblachko_runner_v1_1_1
+        run: |
+          npm run build
+          npx cap sync android
+
+      - name: Build debug APK
+        working-directory: oblachko_runner_v1_1_1/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Prepare APK
+        working-directory: oblachko_runner_v1_1_1
+        run: |
+          mkdir -p out_apks
+          cp android/app/build/outputs/apk/debug/app-debug.apk "out_apks/OblachkoRunner-v1.1.1.${{ github.run_number }}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OblachkoRunner-v1.1.1-APK
+          path: oblachko_runner_v1_1_1/out_apks/*.apk
+
+  build-ostrova-znaniy:
+    name: Острова знаний
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build index.html
+        working-directory: ostrova-znaniy
+        run: python3 build.py
+
+      - name: Install Capacitor
+        working-directory: ostrova-znaniy
+        run: npm install
+
+      - name: Create Android project
+        working-directory: ostrova-znaniy
+        run: |
+          [ -d android ] || npx cap add android
+          npx cap sync android
+          sed -i 's/<activity/<activity android:screenOrientation="sensorLandscape"/' android/app/src/main/AndroidManifest.xml
+
+      - name: Build APK
+        working-directory: ostrova-znaniy/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Prepare APK
+        working-directory: ostrova-znaniy
+        run: |
+          mkdir -p out_apks
+          cp android/app/build/outputs/apk/debug/app-debug.apk "out_apks/OstrovaZnaniy-2.0.${{ github.run_number }}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ostrova-znaniy-apk
+          path: ostrova-znaniy/out_apks/*.apk
+
+  build-play-pay:
+    name: PLAY pay
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build APK
+        working-directory: PLAY-pay
+        run: |
+          gradle assembleDebug --stacktrace
+          mkdir -p out_apks
+          cp app/build/outputs/apk/debug/app-debug.apk "out_apks/PLAY-pay-1.0.${{ github.run_number }}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PLAY-pay-apk
+          path: PLAY-pay/out_apks/*.apk
+
+  release:
+    name: Publish Release
+    needs:
+      - build-appcloner
+      - build-hamsterhouse3d
+      - build-khranitoniks
+      - build-nu-i-shodil
+      - build-oblachko-runner
+      - build-ostrova-znaniy
+      - build-play-pay
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all APKs
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*.apk

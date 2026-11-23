@@ -1,0 +1,6 @@
+{
+  "appId": "ru.ostrova.znaniy",
+  "appName": "Острова знаний",
+  "webDir": "www",
+  "android": { "backgroundColor": "#5f8dff" }
+}

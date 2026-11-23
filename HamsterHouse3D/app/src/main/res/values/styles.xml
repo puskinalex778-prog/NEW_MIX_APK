@@ -1,0 +1,10 @@
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">#F3DFC6</item>
+        <item name="android:navigationBarColor">#F3DFC6</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+    <color name="bg">#F3DFC6</color>
+    <color name="ic_bg">#FFD9A8</color>
+</resources>

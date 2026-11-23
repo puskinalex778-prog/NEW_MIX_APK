@@ -1,0 +1,10 @@
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+captures/
+# ключ подписи клонов генерируется при сборке — не коммитим
+app/src/main/assets/cloner_key.p12

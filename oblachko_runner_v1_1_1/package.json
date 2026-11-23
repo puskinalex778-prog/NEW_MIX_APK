@@ -1,0 +1,30 @@
+{
+  "name": "oblachko-runner",
+  "version": "1.1.1",
+  "private": true,
+  "description": "Облачко: Большой забег — 3D-раннер (Three.js + Capacitor)",
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --minify --format=iife --target=es2019 --outfile=www/game.js",
+    "build:single": "node tools/single.js",
+    "serve": "npx http-server www -p 8080 -c-1",
+    "android:add": "npx cap add android",
+    "android:icons": "npx @capacitor/assets generate --android",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
+    "android:release": "npm run android:sync && cd android && ./gradlew assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/haptics": "^7.0.0",
+    "three": "^0.187.0",
+    "@capacitor/screen-orientation": "^7.0.4"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.0.0",
+    "esbuild": "^0.25.0"
+  }
+}

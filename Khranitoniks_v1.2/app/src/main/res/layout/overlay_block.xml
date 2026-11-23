@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Полноэкранный оверлей блокировки (классические View, без Compose). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/overlay_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clickable="true"
+    android:focusable="true">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingLeft="28dp"
+            android:paddingTop="40dp"
+            android:paddingRight="28dp"
+            android:paddingBottom="40dp">
+
+            <ImageView
+                android:id="@+id/img_character"
+                android:layout_width="170dp"
+                android:layout_height="170dp"
+                android:contentDescription="@string/app_name"
+                android:scaleType="fitCenter" />
+
+            <TextView
+                android:id="@+id/txt_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txt_message"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:lineSpacingExtra="2dp"
+                android:textSize="17sp" />
+
+            <TextView
+                android:id="@+id/txt_big"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center"
+                android:textSize="64sp"
+                android:textStyle="bold" />
+
+            <ProgressBar
+                android:id="@+id/progress"
+                style="@android:style/Widget.Material.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="14dp"
+                android:layout_marginTop="8dp"
+                android:max="100" />
+
+            <TextView
+                android:id="@+id/txt_sub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/txt_warning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:padding="12dp"
+                android:textColor="#FFFFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <!-- Основные кнопки -->
+            <LinearLayout
+                android:id="@+id/panel_main"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:orientation="vertical">
+
+                <Button
+                    android:id="@+id/btn_pin"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:textAllCaps="false"
+                    android:textSize="17sp" />
+
+                <Button
+                    android:id="@+id/btn_code"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="10dp"
+                    android:textAllCaps="false"
+                    android:textSize="17sp" />
+
+                <Button
+                    android:id="@+id/btn_home"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="10dp"
+                    android:textAllCaps="false"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:id="@+id/txt_hint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center"
+                    android:text="@string/overlay_sticky_hint"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Ввод PIN / кода -->
+            <LinearLayout
+                android:id="@+id/panel_pin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/txt_pin_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txt_pin_value"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:letterSpacing="0.2"
+                    android:textSize="34sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txt_pin_error"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center"
+                    android:textColor="#FFFF5252"
+                    android:textSize="15sp" />
+
+                <Button
+                    android:id="@+id/btn_paste"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/paste_code"
+                    android:textAllCaps="false"
+                    android:textSize="16sp"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal">
+
+                    <Button android:id="@+id/key_1" style="@style/OverlayKey" android:text="1" />
+                    <Button android:id="@+id/key_2" style="@style/OverlayKey" android:text="2" />
+                    <Button android:id="@+id/key_3" style="@style/OverlayKey" android:text="3" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button android:id="@+id/key_4" style="@style/OverlayKey" android:text="4" />
+                    <Button android:id="@+id/key_5" style="@style/OverlayKey" android:text="5" />
+                    <Button android:id="@+id/key_6" style="@style/OverlayKey" android:text="6" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button android:id="@+id/key_7" style="@style/OverlayKey" android:text="7" />
+                    <Button android:id="@+id/key_8" style="@style/OverlayKey" android:text="8" />
+                    <Button android:id="@+id/key_9" style="@style/OverlayKey" android:text="9" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button android:id="@+id/key_back" style="@style/OverlayKey" android:text="⌫" />
+                    <Button android:id="@+id/key_0" style="@style/OverlayKey" android:text="0" />
+                    <Button android:id="@+id/key_ok" style="@style/OverlayKey" android:text="OK" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btn_pin_cancel"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/cancel"
+                    android:textAllCaps="false"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <!-- Варианты после ввода PIN -->
+            <LinearLayout
+                android:id="@+id/panel_options"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/txt_options_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
+                    android:gravity="center"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/options_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <Button
+                    android:id="@+id/btn_options_cancel"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/cancel"
+                    android:textAllCaps="false"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>

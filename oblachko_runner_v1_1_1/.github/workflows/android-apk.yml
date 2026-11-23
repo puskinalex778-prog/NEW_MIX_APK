@@ -1,0 +1,59 @@
+# Собирает APK в облаке GitHub: Actions → «Build APK» → Run workflow (или любой push).
+# Готовый файл: вкладка запуска → Artifacts → oblachko-apk.
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      KS: ${{ secrets.KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install
+        run: npm ci
+
+      - name: Build game and sync Android project
+        run: |
+          npm run build
+          npx cap sync android
+
+      - name: Debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android && ./gradlew assembleDebug --no-daemon
+
+      # Подписанный релиз — только если в Settings → Secrets добавлены KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+      - name: Signed release APK
+        if: ${{ env.KS != '' }}
+        env:
+          OBLACHKO_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          OBLACHKO_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          OBLACHKO_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KS" | base64 -d > $RUNNER_TEMP/release.jks
+          export OBLACHKO_KEYSTORE=$RUNNER_TEMP/release.jks
+          cd android && ./gradlew assembleRelease bundleRelease --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oblachko-apk
+          path: |
+            android/app/build/outputs/apk/**/*.apk
+            android/app/build/outputs/bundle/**/*.aab

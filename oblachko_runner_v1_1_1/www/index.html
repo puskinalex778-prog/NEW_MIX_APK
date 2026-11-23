@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#2f8f8a">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Облачко: Большой забег</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="dev-phone">
+<canvas id="scene"></canvas>
+
+<!-- loading -->
+<div id="loading" class="screen show">
+  <div class="loadBox">
+    <div class="logoBig">Облачко<small>Большой забег</small></div>
+    <div class="bar"><i id="loadBar"></i></div>
+    <p id="loadText">Загружаем луг…</p>
+  </div>
+</div>
+
+<!-- device picker -->
+<div id="device" class="screen">
+  <div class="panel center">
+    <p class="kicker">ДОБРО ПОЖАЛОВАТЬ</p>
+    <h2>На чём играем?</h2>
+    <p class="muted">Подстроим размер кнопок, камеру и качество графики. Изменить можно в настройках.</p>
+    <div class="deviceRow">
+      <button class="deviceBtn" data-device="phone"><span class="devIcon phone"></span><b>Телефон</b><small>Компактный интерфейс, экономный режим</small></button>
+      <button class="deviceBtn" data-device="tablet"><span class="devIcon tablet"></span><b>Планшет</b><small>Крупный экран, высокое качество</small></button>
+    </div>
+  </div>
+</div>
+
+<!-- rotate to landscape (asked once, right after the device question) -->
+<div id="orient" class="screen">
+  <div class="panel center">
+    <div class="rotIcon" aria-hidden="true"><span class="rotDev"><i></i></span><span class="rotArrow">↻</span></div>
+    <p class="kicker">ПОСЛЕДНИЙ ШАГ</p>
+    <h2>Поверните устройство</h2>
+    <p class="muted">Игра лучше всего смотрится в горизонтальном режиме: шире обзор, видно препятствия заранее.</p>
+    <div class="btnCol">
+      <button class="btn primary big" id="orientLand">Играть горизонтально ↻</button>
+      <button class="btn ghost" id="orientPort">Оставить вертикально</button>
+    </div>
+    <p class="muted small">Изменить можно в настройках.</p>
+  </div>
+</div>
+
+<!-- top bar (menu) -->
+<div id="topbar" class="hidden">
+  <div class="coinChip"><span class="coinIco"></span><b id="coinTotal">0</b></div>
+  <button class="iconBtn" id="btnSettings" aria-label="Настройки">⚙</button>
+</div>
+
+<!-- main menu -->
+<div id="menu" class="screen">
+  <div class="menuCard">
+    <p class="kicker" id="menuKicker">4 ИСТОРИИ · 12 ГЛАВ</p>
+    <h1>Облачко<span>.</span><small>Большой забег</small></h1>
+    <div class="continueCard" id="continueCard">
+      <small id="contAct">История 1 · Семена для праздника</small>
+      <strong id="contTitle">Письмо с фермы</strong>
+      <span id="contDetail">Глава 1 из 12</span>
+    </div>
+    <button class="btn primary big" id="btnContinue">Начать историю ↗</button>
+    <div class="row2">
+      <button class="btn" id="btnChapters">Главы <em id="starCount">0★</em></button>
+      <button class="btn" id="btnEndless">Свободный забег</button>
+    </div>
+    <div class="row2">
+      <button class="btn ghost" id="btnShop">Магазин</button>
+      <button class="btn ghost" id="btnHeroes">Герои</button>
+    </div>
+    <div class="progressLine"><span>История пройдена</span><b id="sagaCount">0 / 12</b></div>
+    <div class="bar small"><i id="sagaBar"></i></div>
+  </div>
+  <div class="heroTag"><small>ТВОЙ ГЕРОЙ</small><b id="heroTagName">Облачко</b></div>
+</div>
+
+<!-- chapters -->
+<div id="chapters" class="screen">
+  <div class="panel wide">
+    <div class="panelHead"><div><p class="kicker">КНИГА ПРИКЛЮЧЕНИЙ</p><h2>Главы</h2></div><button class="iconBtn close" data-close>×</button></div>
+    <div id="chapterList" class="scroll"></div>
+  </div>
+</div>
+
+<!-- story modal -->
+<div id="story" class="screen">
+  <div class="panel center story">
+    <p class="kicker" id="storyKicker">ГЛАВА 1</p>
+    <h2 id="storyTitle"></h2>
+    <p id="storyText"></p>
+    <div class="goal" id="storyGoal"></div>
+    <div class="quests" id="storyQuests"></div>
+    <div class="row2">
+      <button class="btn ghost" id="storyBack">Назад</button>
+      <button class="btn primary" id="storyGo">Вперёд ↗</button>
+    </div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div class="hudTop">
+    <div class="hudLeft">
+      <div class="lives" id="lives"></div>
+      <div class="hudChip"><span class="coinIco s"></span><b id="hudCoins">0</b></div>
+      <div class="hudChip" id="hudItemsChip"><span id="hudItemIco">✉️</span><b id="hudItems">0/5</b></div>
+    </div>
+    <button class="iconBtn" id="btnPause" aria-label="Пауза">❚❚</button>
+  </div>
+  <div class="hudProgress" id="hudProgress">
+    <div class="hudProgTitle"><b id="hudTitle">Глава</b><span id="hudLeft">0 м</span></div>
+    <div class="bar small"><i id="hudBar"></i><em id="hudChase"></em></div>
+  </div>
+  <div class="hudScore hidden" id="hudScore"><b id="hudDist">0</b><small>м · рекорд <span id="hudBest">0</span></small></div>
+  <div class="powers" id="powers"></div>
+  <div class="touchBtns hidden" id="touchBtns">
+    <button data-act="left">◀</button><button data-act="slide">▼</button><button data-act="jump">▲</button><button data-act="right">▶</button>
+  </div>
+</div>
+<div id="toast"></div>
+<div id="banner"><small id="bannerSub"></small><b id="bannerText"></b></div>
+<div id="flash"></div>
+<div id="fade"></div>
+<div id="countdown"></div>
+
+<!-- pause / results -->
+<div id="modal" class="screen">
+  <div class="panel center">
+    <p class="kicker" id="modalKicker">ПАУЗА</p>
+    <h2 id="modalTitle">Передышка</h2>
+    <div class="stars hidden" id="modalStars"><i></i><i></i><i></i></div>
+    <p id="modalText"></p>
+    <div class="summary" id="modalSummary"></div>
+    <div class="btnCol" id="modalBtns"></div>
+  </div>
+</div>
+
+<!-- shop -->
+<div id="shop" class="screen">
+  <div class="panel wide">
+    <div class="panelHead"><div><p class="kicker">МАГАЗИН НА ФЕРМЕ</p><h2>Улучшения и запасы</h2></div><button class="iconBtn close" data-close>×</button></div>
+    <div class="tabs"><button class="on" data-tab="upgrades">Улучшения</button><button data-tab="boosts">Запасы</button></div>
+    <div id="shopList" class="cards scroll"></div>
+    <p class="muted small">Только игровые монеты. Никаких реальных покупок.</p>
+  </div>
+</div>
+
+<!-- heroes -->
+<div id="heroes" class="screen">
+  <div class="panel side">
+    <div class="panelHead"><div><p class="kicker">КОМПАНИЯ</p><h2>Кто бежит?</h2></div><button class="iconBtn close" data-close>×</button></div>
+    <div id="heroList" class="heroList"></div>
+    <p class="muted small" id="heroNote">В некоторых главах герой задан сюжетом — тогда он бежит бесплатно.</p>
+  </div>
+</div>
+
+<!-- settings -->
+<div id="settings" class="screen">
+  <div class="panel">
+    <div class="panelHead"><div><p class="kicker">НАСТРОЙКИ</p><h2>Звук и управление</h2></div><button class="iconBtn close" data-close>×</button></div>
+    <div class="scroll">
+      <label class="setLine">Музыка<input type="range" id="setMusic" min="0" max="1" step="0.05"></label>
+      <label class="setLine">Эффекты<input type="range" id="setSfx" min="0" max="1" step="0.05"></label>
+      <label class="setCheck"><input type="checkbox" id="setMuted"> Выключить весь звук</label>
+      <label class="setCheck"><input type="checkbox" id="setButtons"> Кнопки управления на экране</label>
+      <label class="setCheck"><input type="checkbox" id="setVibro"> Вибрация при ударе</label>
+      <div class="setLine">Сложность
+        <div class="seg" id="setDiff"><button data-v="easy">Лёгкий</button><button data-v="normal">Средний</button><button data-v="hard">Сложный</button></div>
+      </div>
+      <p class="muted small" id="diffNote"></p>
+      <div class="setLine">Графика
+        <div class="seg" id="setQuality"><button data-v="low">Эконом</button><button data-v="auto">Авто</button><button data-v="high">Высокая</button></div>
+      </div>
+      <div class="setLine">Экран
+        <div class="seg" id="setOrient"><button data-v="landscape">Горизонт.</button><button data-v="portrait">Вертик.</button><button data-v="auto">Авто</button></div>
+      </div>
+      <div class="setLine">Устройство
+        <div class="seg" id="setDevice"><button data-v="phone">Телефон</button><button data-v="tablet">Планшет</button></div>
+      </div>
+      <p class="muted small">Управление: свайпы влево/вправо — полосы, вверх — прыжок, вниз — подкат. На клавиатуре: стрелки, WASD, пробел.</p>
+      <button class="btn danger" id="btnReset">Сбросить прогресс</button>
+    </div>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
