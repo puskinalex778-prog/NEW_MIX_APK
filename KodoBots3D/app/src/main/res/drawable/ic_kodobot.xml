@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Stars -->
+    <path android:fillColor="#66F5D061" android:pathData="M24,26 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0"/>
+    <path android:fillColor="#884EF2E8" android:pathData="M84,28 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0"/>
+    <path android:fillColor="#55FFFFFF" android:pathData="M82,78 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0"/>
+    <!-- Antenna -->
+    <path android:fillColor="#FF9E44" android:pathData="M52,23 L56,23 L56,34 L52,34 Z"/>
+    <path android:fillColor="#FFE066" android:pathData="M54,21 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"/>
+    <!-- Ear pods -->
+    <path android:fillColor="#FF8C32" android:pathData="M24,44 C24,41 26,39 29,39 L33,39 L33,61 L29,61 C26,61 24,59 24,56 Z"/>
+    <path android:fillColor="#FF8C32" android:pathData="M75,39 L79,39 C82,39 84,41 84,44 L84,56 C84,59 82,61 79,61 L75,61 Z"/>
+    <!-- Robot Head -->
+    <path android:fillColor="#F8FAFC" android:pathData="M31,34 L77,34 C80,34 82,36 82,39 L82,64 C82,68 79,71 75,71 L33,71 C29,71 26,68 26,64 L26,39 C26,36 28,34 31,34 Z"/>
+    <!-- Visor -->
+    <path android:fillColor="#111C33" android:pathData="M34,40 L74,40 C76,40 77,41.5 77,43.5 L77,59.5 C77,61.5 76,63 74,63 L34,63 C32,63 31,61.5 31,59.5 L31,43.5 C31,41.5 32,40 34,40 Z"/>
+    <!-- Glowing Eyes -->
+    <path android:fillColor="#4EF2E8" android:pathData="M43,51 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"/>
+    <path android:fillColor="#4EF2E8" android:pathData="M65,51 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"/>
+    <!-- Happy Smile -->
+    <path android:strokeColor="#4EF2E8" android:strokeWidth="2.8" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M48,58 Q54,62 60,58"/>
+    <!-- Body Collar & Thruster -->
+    <path android:fillColor="#38BDF8" android:pathData="M40,73 L68,73 L64,82 L44,82 Z"/>
+    <path android:fillColor="#FFE066" android:pathData="M46,83 L62,83 L54,91 Z"/>
+</vector>
