@@ -1,22 +1,12 @@
-# NEW_MIX_APK
+# Мол Мол: Генеральная уборка
 
-Репозиторий для автоматической сборки APK через GitHub Actions.
+Аренный roguelite по мотивам «Восстания Мол Мол». Игра — это `app/src/main/assets/index.html` + `game.js`.
+Её можно открыть и в браузере: просто откройте index.html.
 
-## Проекты в репозитории
-
-| Папка | Приложение | Артефакты сборки |
-|---|---|---|
-| `AppCloner/` | **App Cloner** | `AppCloner-apk` |
-| `HamsterHouse3D/` | **Хомячий домик 3D** | `HamsterHouse3D-apk` |
-| `Khranitoniks_v1.2/` | **Хранитоникс** и **Хранитоникс Бокс** (v1.2) | `Khranitoniks-v1.2-app-debug-apk`, `Khranitoniks-v1.2-box-debug-apk` |
-| `KodoBots3D/` | **КодоБоты 3D** — обучение детей программированию | `KodoBots3D-apk` |
-| `nu-i-shodil/` | **Ну и сходил…** | `nu-i-shodil-apk` |
-| `oblachko_runner_v1_1_1/` | **Облачко: Большой забег** (v1.1.1) | `OblachkoRunner-v1.1.1-APK` |
-| `ostrova-znaniy/` | **Острова знаний** | `ostrova-znaniy-apk` |
-| `PLAY-pay/` | **PLAY pay** | `PLAY-pay-apk` |
-
-## Где скачать собранные APK
-
-1. Откройте вкладку **Actions** → выберите последний успешный запуск **Build All APKs**.
-2. Внизу страницы в разделе **Artifacts** скачайте нужные архивы с `.apk` внутри.
-3. При наличии тега вида `v*` все 8 `.apk` также публикуются в разделе **Releases**.
+## Как собрать APK через GitHub
+1. Создайте новый репозиторий на github.com.
+2. Загрузите в него **всё содержимое** этой папки, включая скрытую папку `.github`
+   (Add file → Upload files; папку `.github` проще залить через GitHub Desktop или `git push`).
+3. Откройте вкладку **Actions** → «Build APK». Сборка запустится сама (или нажмите Run workflow).
+4. Через 3–5 минут откройте завершённую сборку → внизу **Artifacts → MolMol-apk** → скачайте zip, внутри `app-debug.apk`.
+5. На телефоне разрешите установку из неизвестных источников и установите APK.
